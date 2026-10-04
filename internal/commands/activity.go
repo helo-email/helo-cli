@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"fmt"
-	"github.com/balvig/helo-sdk-go"
+	"github.com/helo-email/helo-sdk-go"
 	"time"
 )
 
@@ -141,9 +141,9 @@ func newActivityListMessagesCmd() *cobra.Command {
 			}
 			if status != "" {
 				switch status {
-				case "sent", "queued":
+				case "queued", "sent":
 				default:
-					return fmt.Errorf("invalid value %q for --status: must be one of sent|queued", status)
+					return fmt.Errorf("invalid value %q for --status: must be one of queued|sent", status)
 				}
 			}
 
@@ -169,7 +169,7 @@ func newActivityListMessagesCmd() *cobra.Command {
 			params.Subject = subject
 			params.Tags = tags
 			params.MailType = mailType
-			params.Status = status
+			params.Status = helo.MessageStatus(status)
 
 			result, err := client.Activity.ListMessages(cmd.Context(), params)
 			if err != nil {
@@ -191,9 +191,9 @@ func newActivityListMessagesCmd() *cobra.Command {
 	_ = cmd.RegisterFlagCompletionFunc("mail-type", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return []string{"transactional", "broadcast"}, cobra.ShellCompDirectiveNoFileComp
 	})
-	cmd.Flags().StringVar(&status, "status", "", "status (one of: sent|queued)")
+	cmd.Flags().StringVar(&status, "status", "", "status (one of: queued|sent)")
 	_ = cmd.RegisterFlagCompletionFunc("status", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return []string{"sent", "queued"}, cobra.ShellCompDirectiveNoFileComp
+		return []string{"queued", "sent"}, cobra.ShellCompDirectiveNoFileComp
 	})
 
 	return cmd

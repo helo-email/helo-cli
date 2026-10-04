@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"fmt"
-	"github.com/balvig/helo-sdk-go"
+	"github.com/helo-email/helo-sdk-go"
 )
 
 // NewDomainsCmd builds the cobra command group for Domains.

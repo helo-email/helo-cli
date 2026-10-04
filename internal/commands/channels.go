@@ -5,7 +5,7 @@ import (
 
 	"encoding/json"
 	"fmt"
-	"github.com/balvig/helo-sdk-go"
+	"github.com/helo-email/helo-sdk-go"
 )
 
 // NewChannelsCmd builds the cobra command group for Channels.
@@ -107,7 +107,7 @@ func newChannelsCreateCmd() *cobra.Command {
 				if err := json.Unmarshal([]byte(tracking), &v); err != nil {
 					return fmt.Errorf("invalid JSON for --tracking: %w", err)
 				}
-				params.Tracking = v
+				params.Tracking = &v
 			}
 
 			result, err := client.Channels.Create(cmd.Context(), params)
@@ -185,7 +185,7 @@ func newChannelsUpdateCmd() *cobra.Command {
 				if err := json.Unmarshal([]byte(tracking), &v); err != nil {
 					return fmt.Errorf("invalid JSON for --tracking: %w", err)
 				}
-				params.Tracking = v
+				params.Tracking = &v
 			}
 
 			result, err := client.Channels.Update(cmd.Context(), id, params)

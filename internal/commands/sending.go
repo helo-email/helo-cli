@@ -5,7 +5,7 @@ import (
 
 	"encoding/json"
 	"fmt"
-	"github.com/balvig/helo-sdk-go"
+	"github.com/helo-email/helo-sdk-go"
 )
 
 // NewSendingCmd builds the cobra command group for Sending.
@@ -14,14 +14,14 @@ func NewSendingCmd() *cobra.Command {
 		Use:   "sending",
 		Short: "Send transactional and broadcast emails.",
 	}
-	cmd.AddCommand(newSendingTransactionalCmd())
-	cmd.AddCommand(newSendingTransactionalBatchCmd())
-	cmd.AddCommand(newSendingBroadcastCmd())
-	cmd.AddCommand(newSendingBroadcastMessageCmd())
+	cmd.AddCommand(newSendingSendTransactionalCmd())
+	cmd.AddCommand(newSendingSendTransactionalBatchCmd())
+	cmd.AddCommand(newSendingSendBroadcastCmd())
+	cmd.AddCommand(newSendingSendBroadcastMessageCmd())
 	return cmd
 }
 
-func newSendingTransactionalCmd() *cobra.Command {
+func newSendingSendTransactionalCmd() *cobra.Command {
 	var from string
 	var to string
 	var cc string
@@ -36,9 +36,11 @@ func newSendingTransactionalCmd() *cobra.Command {
 	var tags []string
 	var headers string
 	var metadata string
+	var channelID string
+	var idempotencyKey string
 
 	cmd := &cobra.Command{
-		Use:   "transactional",
+		Use:   "send-transactional",
 		Short: "Send a transactional email",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := newClient()
@@ -48,7 +50,7 @@ func newSendingTransactionalCmd() *cobra.Command {
 
 			params := &helo.SendMessageRequest{}
 			if from != "" {
-				var v helo.MailAddress1
+				var v helo.MailAddress
 				if err := json.Unmarshal([]byte(from), &v); err != nil {
 					return fmt.Errorf("invalid JSON for --from: %w", err)
 				}
@@ -58,7 +60,7 @@ func newSendingTransactionalCmd() *cobra.Command {
 				return fmt.Errorf("--from is required")
 			}
 			if to != "" {
-				var v []helo.MailAddress1
+				var v []helo.MailAddress
 				if err := json.Unmarshal([]byte(to), &v); err != nil {
 					return fmt.Errorf("invalid JSON for --to: %w", err)
 				}
@@ -68,21 +70,21 @@ func newSendingTransactionalCmd() *cobra.Command {
 				return fmt.Errorf("--to is required")
 			}
 			if cc != "" {
-				var v []helo.MailAddress1
+				var v []helo.MailAddress
 				if err := json.Unmarshal([]byte(cc), &v); err != nil {
 					return fmt.Errorf("invalid JSON for --cc: %w", err)
 				}
 				params.Cc = v
 			}
 			if bcc != "" {
-				var v []helo.MailAddress1
+				var v []helo.MailAddress
 				if err := json.Unmarshal([]byte(bcc), &v); err != nil {
 					return fmt.Errorf("invalid JSON for --bcc: %w", err)
 				}
 				params.Bcc = v
 			}
 			if replyTo != "" {
-				var v []helo.MailAddress1
+				var v []helo.MailAddress
 				if err := json.Unmarshal([]byte(replyTo), &v); err != nil {
 					return fmt.Errorf("invalid JSON for --reply-to: %w", err)
 				}
@@ -96,14 +98,14 @@ func newSendingTransactionalCmd() *cobra.Command {
 				if err := json.Unmarshal([]byte(template), &v); err != nil {
 					return fmt.Errorf("invalid JSON for --template: %w", err)
 				}
-				params.Template = v
+				params.Template = &v
 			}
 			if tracking != "" {
 				var v helo.SendMessageRequestTracking
 				if err := json.Unmarshal([]byte(tracking), &v); err != nil {
 					return fmt.Errorf("invalid JSON for --tracking: %w", err)
 				}
-				params.Tracking = v
+				params.Tracking = &v
 			}
 			if attachments != "" {
 				var v []helo.Attachment
@@ -128,7 +130,11 @@ func newSendingTransactionalCmd() *cobra.Command {
 				params.Metadata = v
 			}
 
-			result, err := client.Sending.Transactional(cmd.Context(), params)
+			opts := &helo.SendingSendTransactionalOptions{
+				ChannelID:      channelID,
+				IdempotencyKey: idempotencyKey,
+			}
+			result, err := client.Sending.SendTransactional(cmd.Context(), params, opts)
 			if err != nil {
 				return err
 			}
@@ -152,15 +158,19 @@ func newSendingTransactionalCmd() *cobra.Command {
 	cmd.Flags().StringSliceVar(&tags, "tags", nil, "tags")
 	cmd.Flags().StringVar(&headers, "headers", "", "headers (JSON)")
 	cmd.Flags().StringVar(&metadata, "metadata", "", "metadata (JSON)")
+	cmd.Flags().StringVar(&channelID, "channel-id", "", "Used to specify a channel ID for sending when using an account-level API credential.")
+	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "A unique identifier used to prevent duplicate messages being sent when retrying failed requests.")
 
 	return cmd
 }
 
-func newSendingTransactionalBatchCmd() *cobra.Command {
+func newSendingSendTransactionalBatchCmd() *cobra.Command {
 	var requests string
+	var channelID string
+	var idempotencyKey string
 
 	cmd := &cobra.Command{
-		Use:   "transactional-batch",
+		Use:   "send-transactional-batch",
 		Short: "Send transactional emails in batch",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := newClient()
@@ -180,7 +190,11 @@ func newSendingTransactionalBatchCmd() *cobra.Command {
 				return fmt.Errorf("--requests is required")
 			}
 
-			result, err := client.Sending.TransactionalBatch(cmd.Context(), params)
+			opts := &helo.SendingSendTransactionalBatchOptions{
+				ChannelID:      channelID,
+				IdempotencyKey: idempotencyKey,
+			}
+			result, err := client.Sending.SendTransactionalBatch(cmd.Context(), params, opts)
 			if err != nil {
 				return err
 			}
@@ -190,11 +204,13 @@ func newSendingTransactionalBatchCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&requests, "requests", "", "requests (JSON, required)")
 	_ = cmd.MarkFlagRequired("requests")
+	cmd.Flags().StringVar(&channelID, "channel-id", "", "Used to specify a channel ID for sending when using an account-level API credential.")
+	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "A unique identifier used to prevent duplicate messages being sent when retrying failed requests.")
 
 	return cmd
 }
 
-func newSendingBroadcastCmd() *cobra.Command {
+func newSendingSendBroadcastCmd() *cobra.Command {
 	var from string
 	var replyTo string
 	var template string
@@ -204,10 +220,12 @@ func newSendingBroadcastCmd() *cobra.Command {
 	var headers string
 	var metadata string
 	var messages string
+	var channelID string
+	var idempotencyKey string
 
 	cmd := &cobra.Command{
-		Use:   "broadcast",
-		Short: "Send a broadcast email",
+		Use:   "send-broadcast",
+		Short: "SendBroadcast operation",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := newClient()
 			if err != nil {
@@ -216,7 +234,7 @@ func newSendingBroadcastCmd() *cobra.Command {
 
 			params := &helo.SendBroadcastRequest{}
 			if from != "" {
-				var v helo.MailAddress1
+				var v helo.MailAddress
 				if err := json.Unmarshal([]byte(from), &v); err != nil {
 					return fmt.Errorf("invalid JSON for --from: %w", err)
 				}
@@ -226,7 +244,7 @@ func newSendingBroadcastCmd() *cobra.Command {
 				return fmt.Errorf("--from is required")
 			}
 			if replyTo != "" {
-				var v []helo.MailAddress1
+				var v []helo.MailAddress
 				if err := json.Unmarshal([]byte(replyTo), &v); err != nil {
 					return fmt.Errorf("invalid JSON for --reply-to: %w", err)
 				}
@@ -247,7 +265,7 @@ func newSendingBroadcastCmd() *cobra.Command {
 				if err := json.Unmarshal([]byte(tracking), &v); err != nil {
 					return fmt.Errorf("invalid JSON for --tracking: %w", err)
 				}
-				params.Tracking = v
+				params.Tracking = &v
 			}
 			if attachments != "" {
 				var v []helo.Attachment
@@ -282,7 +300,11 @@ func newSendingBroadcastCmd() *cobra.Command {
 				return fmt.Errorf("--messages is required")
 			}
 
-			result, err := client.Sending.Broadcast(cmd.Context(), params)
+			opts := &helo.SendingSendBroadcastOptions{
+				ChannelID:      channelID,
+				IdempotencyKey: idempotencyKey,
+			}
+			result, err := client.Sending.SendBroadcast(cmd.Context(), params, opts)
 			if err != nil {
 				return err
 			}
@@ -302,11 +324,13 @@ func newSendingBroadcastCmd() *cobra.Command {
 	cmd.Flags().StringVar(&metadata, "metadata", "", "metadata (JSON)")
 	cmd.Flags().StringVar(&messages, "messages", "", "messages (JSON, required)")
 	_ = cmd.MarkFlagRequired("messages")
+	cmd.Flags().StringVar(&channelID, "channel-id", "", "Used to specify a channel ID for sending when using an account-level API credential.")
+	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "A unique identifier used to prevent duplicate messages being sent when retrying failed requests.")
 
 	return cmd
 }
 
-func newSendingBroadcastMessageCmd() *cobra.Command {
+func newSendingSendBroadcastMessageCmd() *cobra.Command {
 	var from string
 	var to string
 	var cc string
@@ -321,9 +345,11 @@ func newSendingBroadcastMessageCmd() *cobra.Command {
 	var tags []string
 	var headers string
 	var metadata string
+	var channelID string
+	var idempotencyKey string
 
 	cmd := &cobra.Command{
-		Use:   "broadcast-message",
+		Use:   "send-broadcast-message",
 		Short: "Send a single broadcast email",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := newClient()
@@ -333,7 +359,7 @@ func newSendingBroadcastMessageCmd() *cobra.Command {
 
 			params := &helo.SendMessageRequest{}
 			if from != "" {
-				var v helo.MailAddress1
+				var v helo.MailAddress
 				if err := json.Unmarshal([]byte(from), &v); err != nil {
 					return fmt.Errorf("invalid JSON for --from: %w", err)
 				}
@@ -343,7 +369,7 @@ func newSendingBroadcastMessageCmd() *cobra.Command {
 				return fmt.Errorf("--from is required")
 			}
 			if to != "" {
-				var v []helo.MailAddress1
+				var v []helo.MailAddress
 				if err := json.Unmarshal([]byte(to), &v); err != nil {
 					return fmt.Errorf("invalid JSON for --to: %w", err)
 				}
@@ -353,21 +379,21 @@ func newSendingBroadcastMessageCmd() *cobra.Command {
 				return fmt.Errorf("--to is required")
 			}
 			if cc != "" {
-				var v []helo.MailAddress1
+				var v []helo.MailAddress
 				if err := json.Unmarshal([]byte(cc), &v); err != nil {
 					return fmt.Errorf("invalid JSON for --cc: %w", err)
 				}
 				params.Cc = v
 			}
 			if bcc != "" {
-				var v []helo.MailAddress1
+				var v []helo.MailAddress
 				if err := json.Unmarshal([]byte(bcc), &v); err != nil {
 					return fmt.Errorf("invalid JSON for --bcc: %w", err)
 				}
 				params.Bcc = v
 			}
 			if replyTo != "" {
-				var v []helo.MailAddress1
+				var v []helo.MailAddress
 				if err := json.Unmarshal([]byte(replyTo), &v); err != nil {
 					return fmt.Errorf("invalid JSON for --reply-to: %w", err)
 				}
@@ -381,14 +407,14 @@ func newSendingBroadcastMessageCmd() *cobra.Command {
 				if err := json.Unmarshal([]byte(template), &v); err != nil {
 					return fmt.Errorf("invalid JSON for --template: %w", err)
 				}
-				params.Template = v
+				params.Template = &v
 			}
 			if tracking != "" {
 				var v helo.SendMessageRequestTracking
 				if err := json.Unmarshal([]byte(tracking), &v); err != nil {
 					return fmt.Errorf("invalid JSON for --tracking: %w", err)
 				}
-				params.Tracking = v
+				params.Tracking = &v
 			}
 			if attachments != "" {
 				var v []helo.Attachment
@@ -413,7 +439,11 @@ func newSendingBroadcastMessageCmd() *cobra.Command {
 				params.Metadata = v
 			}
 
-			result, err := client.Sending.BroadcastMessage(cmd.Context(), params)
+			opts := &helo.SendingSendBroadcastMessageOptions{
+				ChannelID:      channelID,
+				IdempotencyKey: idempotencyKey,
+			}
+			result, err := client.Sending.SendBroadcastMessage(cmd.Context(), params, opts)
 			if err != nil {
 				return err
 			}
@@ -437,6 +467,8 @@ func newSendingBroadcastMessageCmd() *cobra.Command {
 	cmd.Flags().StringSliceVar(&tags, "tags", nil, "tags")
 	cmd.Flags().StringVar(&headers, "headers", "", "headers (JSON)")
 	cmd.Flags().StringVar(&metadata, "metadata", "", "metadata (JSON)")
+	cmd.Flags().StringVar(&channelID, "channel-id", "", "Used to specify a channel ID for sending when using an account-level API credential.")
+	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "A unique identifier used to prevent duplicate messages being sent when retrying failed requests.")
 
 	return cmd
 }

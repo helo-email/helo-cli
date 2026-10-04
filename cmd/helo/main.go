@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/balvig/helo-cli/internal/cli"
+	"github.com/helo-email/helo-cli/internal/cli"
 )
 
 func main() {

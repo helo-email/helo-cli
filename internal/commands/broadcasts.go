@@ -4,7 +4,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"fmt"
-	"github.com/balvig/helo-sdk-go"
+	"github.com/helo-email/helo-sdk-go"
+	"time"
 )
 
 // NewBroadcastsCmd builds the cobra command group for Broadcasts.
@@ -24,6 +25,8 @@ func newBroadcastsListCmd() *cobra.Command {
 	var channelID string
 	var status string
 	var subject string
+	var from string
+	var to string
 	var limit int
 	var offset int
 
@@ -37,9 +40,9 @@ func newBroadcastsListCmd() *cobra.Command {
 			}
 			if status != "" {
 				switch status {
-				case "accepted", "processing", "completed", "cancelled":
+				case "accepted", "processing", "completed", "canceled":
 				default:
-					return fmt.Errorf("invalid value %q for --status: must be one of accepted|processing|completed|cancelled", status)
+					return fmt.Errorf("invalid value %q for --status: must be one of accepted|processing|completed|canceled", status)
 				}
 			}
 
@@ -47,6 +50,20 @@ func newBroadcastsListCmd() *cobra.Command {
 			params.ChannelID = channelID
 			params.Status = helo.BroadcastStatus(status)
 			params.Subject = subject
+			if from != "" {
+				t, err := time.Parse(time.RFC3339, from)
+				if err != nil {
+					return fmt.Errorf("invalid timestamp for --from: %w", err)
+				}
+				params.From = t
+			}
+			if to != "" {
+				t, err := time.Parse(time.RFC3339, to)
+				if err != nil {
+					return fmt.Errorf("invalid timestamp for --to: %w", err)
+				}
+				params.To = t
+			}
 			params.Limit = limit
 			params.Offset = offset
 
@@ -60,11 +77,13 @@ func newBroadcastsListCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&channelID, "channel-id", "", "channelId (required)")
 	_ = cmd.MarkFlagRequired("channel-id")
-	cmd.Flags().StringVar(&status, "status", "", "status (one of: accepted|processing|completed|cancelled)")
+	cmd.Flags().StringVar(&status, "status", "", "status (one of: accepted|processing|completed|canceled)")
 	_ = cmd.RegisterFlagCompletionFunc("status", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return []string{"accepted", "processing", "completed", "cancelled"}, cobra.ShellCompDirectiveNoFileComp
+		return []string{"accepted", "processing", "completed", "canceled"}, cobra.ShellCompDirectiveNoFileComp
 	})
 	cmd.Flags().StringVar(&subject, "subject", "", "subject")
+	cmd.Flags().StringVar(&from, "from", "", "from")
+	cmd.Flags().StringVar(&to, "to", "", "to")
 	cmd.Flags().IntVar(&limit, "limit", 0, "limit")
 	cmd.Flags().IntVar(&offset, "offset", 0, "offset")
 
@@ -96,10 +115,12 @@ func newBroadcastsRetrieveCmd() *cobra.Command {
 }
 
 func newBroadcastsListFailuresCmd() *cobra.Command {
+	var limit int
+	var offset int
 
 	cmd := &cobra.Command{
 		Use:   "list-failures <id>",
-		Short: "List broadcast failures",
+		Short: "List failed broadcast messages",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := newClient()
@@ -108,22 +129,31 @@ func newBroadcastsListFailuresCmd() *cobra.Command {
 			}
 			id := args[0]
 
-			result, err := client.Broadcasts.ListFailures(cmd.Context(), id)
+			params := &helo.BroadcastsListFailuresParams{}
+			params.Limit = limit
+			params.Offset = offset
+
+			result, err := client.Broadcasts.ListFailures(cmd.Context(), id, params)
 			if err != nil {
 				return err
 			}
 			return emit(result)
 		},
 	}
+
+	cmd.Flags().IntVar(&limit, "limit", 0, "limit")
+	cmd.Flags().IntVar(&offset, "offset", 0, "offset")
 
 	return cmd
 }
 
 func newBroadcastsListSuppressionsCmd() *cobra.Command {
+	var limit int
+	var offset int
 
 	cmd := &cobra.Command{
 		Use:   "list-suppressions <id>",
-		Short: "List broadcast suppressions",
+		Short: "List broadcast suppressed recipients",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := newClient()
@@ -132,13 +162,20 @@ func newBroadcastsListSuppressionsCmd() *cobra.Command {
 			}
 			id := args[0]
 
-			result, err := client.Broadcasts.ListSuppressions(cmd.Context(), id)
+			params := &helo.BroadcastsListSuppressionsParams{}
+			params.Limit = limit
+			params.Offset = offset
+
+			result, err := client.Broadcasts.ListSuppressions(cmd.Context(), id, params)
 			if err != nil {
 				return err
 			}
 			return emit(result)
 		},
 	}
+
+	cmd.Flags().IntVar(&limit, "limit", 0, "limit")
+	cmd.Flags().IntVar(&offset, "offset", 0, "offset")
 
 	return cmd
 }

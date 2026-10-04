@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/balvig/helo-cli/internal/commands"
+	"github.com/helo-email/helo-cli/internal/commands"
 )
 
 // GlobalFlags collects flags shared by every subcommand.
@@ -39,7 +39,7 @@ func NewRootCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:           "helo",
 		Short:         "Command-line interface for Helo API",
-		Long:          "Helo API",
+		Long:          "Helo Email API (https://helohq.com)",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
@@ -67,7 +67,7 @@ func NewRootCmd() *cobra.Command {
 		commands.NewBroadcastsCmd(),
 		commands.NewStatisticsCmd(),
 		commands.NewSuppressionsCmd(),
-		commands.NewWebhookEndpointsCmd(),
+		commands.NewWebhooksCmd(),
 	)
 
 	return cmd

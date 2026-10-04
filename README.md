@@ -1,11 +1,11 @@
 # helo CLI
 
-Generated CLI for Helo API. Wraps the [helo](https://github.com/balvig/helo-sdk-go) Go SDK.
+Generated CLI for Helo API. Wraps the [helo](https://github.com/helo-email/helo-sdk-go) Go SDK.
 
 ## Install
 
 ```bash
-go install github.com/balvig/helo-cli/cmd/helo@latest
+go install github.com/helo-email/helo-cli/cmd/helo@latest
 ```
 
 Or build from a local checkout:
@@ -53,4 +53,4 @@ Pass `--quiet` to print just the raw data (e.g. for piping into `jq`).
 - `helo broadcasts` — Manage and track broadcast email campaigns.
 - `helo statistics` — Access activity statistics.
 - `helo suppressions` — Manage Suppressions
-- `helo webhook-endpoints` — Create and manage webhook endpoints for event notifications.
+- `helo webhooks` — Create and manage webhooks for event notifications.

@@ -5,44 +5,44 @@ import (
 
 	"encoding/json"
 	"fmt"
-	"github.com/balvig/helo-sdk-go"
+	"github.com/helo-email/helo-sdk-go"
 )
 
-// NewWebhookEndpointsCmd builds the cobra command group for WebhookEndpoints.
-func NewWebhookEndpointsCmd() *cobra.Command {
+// NewWebhooksCmd builds the cobra command group for Webhooks.
+func NewWebhooksCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "webhook-endpoints",
-		Short: "Create and manage webhook endpoints for event notifications.",
+		Use:   "webhooks",
+		Short: "Create and manage webhooks for event notifications.",
 	}
-	cmd.AddCommand(newWebhookEndpointsListCmd())
-	cmd.AddCommand(newWebhookEndpointsCreateCmd())
-	cmd.AddCommand(newWebhookEndpointsRetrieveCmd())
-	cmd.AddCommand(newWebhookEndpointsUpdateCmd())
-	cmd.AddCommand(newWebhookEndpointsDeleteCmd())
-	cmd.AddCommand(newWebhookEndpointsRegenerateSigningKeyCmd())
+	cmd.AddCommand(newWebhooksListCmd())
+	cmd.AddCommand(newWebhooksCreateCmd())
+	cmd.AddCommand(newWebhooksRetrieveCmd())
+	cmd.AddCommand(newWebhooksUpdateCmd())
+	cmd.AddCommand(newWebhooksDeleteCmd())
+	cmd.AddCommand(newWebhooksRegenerateSigningKeyCmd())
 	return cmd
 }
 
-func newWebhookEndpointsListCmd() *cobra.Command {
+func newWebhooksListCmd() *cobra.Command {
 	var limit int
 	var offset int
 	var channelIds []string
 
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List all webhook endpoints",
+		Short: "List all webhooks",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := newClient()
 			if err != nil {
 				return err
 			}
 
-			params := &helo.WebhookEndpointsListParams{}
+			params := &helo.WebhooksListParams{}
 			params.Limit = limit
 			params.Offset = offset
 			params.ChannelIds = channelIds
 
-			result, err := client.WebhookEndpoints.List(cmd.Context(), params)
+			result, err := client.Webhooks.List(cmd.Context(), params)
 			if err != nil {
 				return err
 			}
@@ -57,7 +57,7 @@ func newWebhookEndpointsListCmd() *cobra.Command {
 	return cmd
 }
 
-func newWebhookEndpointsCreateCmd() *cobra.Command {
+func newWebhooksCreateCmd() *cobra.Command {
 	var url string
 	var events []string
 	var channelID string
@@ -66,7 +66,7 @@ func newWebhookEndpointsCreateCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "create",
-		Short: "Create a webhook endpoint",
+		Short: "Create a webhook",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := newClient()
 			if err != nil {
@@ -74,13 +74,13 @@ func newWebhookEndpointsCreateCmd() *cobra.Command {
 			}
 			for _, v := range events {
 				switch v {
-				case "accepted", "processed", "bounced", "delivered", "opened", "clicked", "complained", "unsubscribed", "resubscribed":
+				case "message-accepted", "message-processed", "email-delivered", "email-bounced", "email-opened", "link-clicked", "recipient-complained", "recipient-unsubscribed", "recipient-resubscribed", "domain-key-verified", "domain-key-verification-failed", "return-path-domain-verified", "return-path-domain-verification-failed":
 				default:
-					return fmt.Errorf("invalid value %q for --events: must be one of accepted|processed|bounced|delivered|opened|clicked|complained|unsubscribed|resubscribed", v)
+					return fmt.Errorf("invalid value %q for --events: must be one of message-accepted|message-processed|email-delivered|email-bounced|email-opened|link-clicked|recipient-complained|recipient-unsubscribed|recipient-resubscribed|domain-key-verified|domain-key-verification-failed|return-path-domain-verified|return-path-domain-verification-failed", v)
 				}
 			}
 
-			params := &helo.CreateWebhookEndpointRequest{}
+			params := &helo.CreateWebhookRequest{}
 			params.URL = url
 			if url == "" {
 				return fmt.Errorf("--url is required")
@@ -98,7 +98,7 @@ func newWebhookEndpointsCreateCmd() *cobra.Command {
 			}
 			params.Enabled = enabled
 
-			result, err := client.WebhookEndpoints.Create(cmd.Context(), params)
+			result, err := client.Webhooks.Create(cmd.Context(), params)
 			if err != nil {
 				return err
 			}
@@ -108,10 +108,10 @@ func newWebhookEndpointsCreateCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&url, "url", "", "url (required)")
 	_ = cmd.MarkFlagRequired("url")
-	cmd.Flags().StringSliceVar(&events, "events", nil, "events (required, one of: accepted|processed|bounced|delivered|opened|clicked|complained|unsubscribed|resubscribed)")
+	cmd.Flags().StringSliceVar(&events, "events", nil, "events (required, one of: message-accepted|message-processed|email-delivered|email-bounced|email-opened|link-clicked|recipient-complained|recipient-unsubscribed|recipient-resubscribed|domain-key-verified|domain-key-verification-failed|return-path-domain-verified|return-path-domain-verification-failed)")
 	_ = cmd.MarkFlagRequired("events")
 	_ = cmd.RegisterFlagCompletionFunc("events", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return []string{"accepted", "processed", "bounced", "delivered", "opened", "clicked", "complained", "unsubscribed", "resubscribed"}, cobra.ShellCompDirectiveNoFileComp
+		return []string{"message-accepted", "message-processed", "email-delivered", "email-bounced", "email-opened", "link-clicked", "recipient-complained", "recipient-unsubscribed", "recipient-resubscribed", "domain-key-verified", "domain-key-verification-failed", "return-path-domain-verified", "return-path-domain-verification-failed"}, cobra.ShellCompDirectiveNoFileComp
 	})
 	cmd.Flags().StringVar(&channelID, "channel-id", "", "channelId")
 	cmd.Flags().StringVar(&additionalHeaders, "additional-headers", "", "additionalHeaders (JSON)")
@@ -120,11 +120,11 @@ func newWebhookEndpointsCreateCmd() *cobra.Command {
 	return cmd
 }
 
-func newWebhookEndpointsRetrieveCmd() *cobra.Command {
+func newWebhooksRetrieveCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "retrieve <id>",
-		Short: "Retrieve a webhook endpoint",
+		Short: "Retrieve a webhook",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := newClient()
@@ -133,7 +133,7 @@ func newWebhookEndpointsRetrieveCmd() *cobra.Command {
 			}
 			id := args[0]
 
-			result, err := client.WebhookEndpoints.Retrieve(cmd.Context(), id)
+			result, err := client.Webhooks.Retrieve(cmd.Context(), id)
 			if err != nil {
 				return err
 			}
@@ -144,7 +144,7 @@ func newWebhookEndpointsRetrieveCmd() *cobra.Command {
 	return cmd
 }
 
-func newWebhookEndpointsUpdateCmd() *cobra.Command {
+func newWebhooksUpdateCmd() *cobra.Command {
 	var url string
 	var events []string
 	var channelID string
@@ -153,7 +153,7 @@ func newWebhookEndpointsUpdateCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "update <id>",
-		Short: "Update a webhook endpoint",
+		Short: "Update a webhook",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := newClient()
@@ -162,14 +162,14 @@ func newWebhookEndpointsUpdateCmd() *cobra.Command {
 			}
 			for _, v := range events {
 				switch v {
-				case "accepted", "processed", "bounced", "delivered", "opened", "clicked", "complained", "unsubscribed", "resubscribed":
+				case "message-accepted", "message-processed", "email-delivered", "email-bounced", "email-opened", "link-clicked", "recipient-complained", "recipient-unsubscribed", "recipient-resubscribed", "domain-key-verified", "domain-key-verification-failed", "return-path-domain-verified", "return-path-domain-verification-failed":
 				default:
-					return fmt.Errorf("invalid value %q for --events: must be one of accepted|processed|bounced|delivered|opened|clicked|complained|unsubscribed|resubscribed", v)
+					return fmt.Errorf("invalid value %q for --events: must be one of message-accepted|message-processed|email-delivered|email-bounced|email-opened|link-clicked|recipient-complained|recipient-unsubscribed|recipient-resubscribed|domain-key-verified|domain-key-verification-failed|return-path-domain-verified|return-path-domain-verification-failed", v)
 				}
 			}
 			id := args[0]
 
-			params := &helo.UpdateWebhookEndpointRequest{}
+			params := &helo.UpdateWebhookRequest{}
 			params.URL = url
 			for _, v := range events {
 				params.Events = append(params.Events, helo.WebhookEvent(v))
@@ -184,7 +184,7 @@ func newWebhookEndpointsUpdateCmd() *cobra.Command {
 			}
 			params.Enabled = enabled
 
-			result, err := client.WebhookEndpoints.Update(cmd.Context(), id, params)
+			result, err := client.Webhooks.Update(cmd.Context(), id, params)
 			if err != nil {
 				return err
 			}
@@ -193,9 +193,9 @@ func newWebhookEndpointsUpdateCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&url, "url", "", "url")
-	cmd.Flags().StringSliceVar(&events, "events", nil, "events (one of: accepted|processed|bounced|delivered|opened|clicked|complained|unsubscribed|resubscribed)")
+	cmd.Flags().StringSliceVar(&events, "events", nil, "events (one of: message-accepted|message-processed|email-delivered|email-bounced|email-opened|link-clicked|recipient-complained|recipient-unsubscribed|recipient-resubscribed|domain-key-verified|domain-key-verification-failed|return-path-domain-verified|return-path-domain-verification-failed)")
 	_ = cmd.RegisterFlagCompletionFunc("events", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return []string{"accepted", "processed", "bounced", "delivered", "opened", "clicked", "complained", "unsubscribed", "resubscribed"}, cobra.ShellCompDirectiveNoFileComp
+		return []string{"message-accepted", "message-processed", "email-delivered", "email-bounced", "email-opened", "link-clicked", "recipient-complained", "recipient-unsubscribed", "recipient-resubscribed", "domain-key-verified", "domain-key-verification-failed", "return-path-domain-verified", "return-path-domain-verification-failed"}, cobra.ShellCompDirectiveNoFileComp
 	})
 	cmd.Flags().StringVar(&channelID, "channel-id", "", "channelId")
 	cmd.Flags().StringVar(&additionalHeaders, "additional-headers", "", "additionalHeaders (JSON)")
@@ -204,11 +204,11 @@ func newWebhookEndpointsUpdateCmd() *cobra.Command {
 	return cmd
 }
 
-func newWebhookEndpointsDeleteCmd() *cobra.Command {
+func newWebhooksDeleteCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "delete <id>",
-		Short: "Delete a webhook endpoint",
+		Short: "Delete a webhook",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := newClient()
@@ -217,7 +217,7 @@ func newWebhookEndpointsDeleteCmd() *cobra.Command {
 			}
 			id := args[0]
 
-			if err := client.WebhookEndpoints.Delete(cmd.Context(), id); err != nil {
+			if err := client.Webhooks.Delete(cmd.Context(), id); err != nil {
 				return err
 			}
 			return emit(map[string]string{"status": "ok"})
@@ -227,7 +227,7 @@ func newWebhookEndpointsDeleteCmd() *cobra.Command {
 	return cmd
 }
 
-func newWebhookEndpointsRegenerateSigningKeyCmd() *cobra.Command {
+func newWebhooksRegenerateSigningKeyCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "regenerate-signing-key <id>",
@@ -240,7 +240,7 @@ func newWebhookEndpointsRegenerateSigningKeyCmd() *cobra.Command {
 			}
 			id := args[0]
 
-			result, err := client.WebhookEndpoints.RegenerateSigningKey(cmd.Context(), id)
+			result, err := client.Webhooks.RegenerateSigningKey(cmd.Context(), id)
 			if err != nil {
 				return err
 			}

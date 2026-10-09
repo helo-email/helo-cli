@@ -225,7 +225,7 @@ func newSendingSendBroadcastCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "send-broadcast",
-		Short: "SendBroadcast operation",
+		Short: "Send a broadcast",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := newClient()
 			if err != nil {

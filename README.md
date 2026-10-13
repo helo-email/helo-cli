@@ -1,6 +1,6 @@
 # helo CLI
 
-Generated CLI for Helo API. Wraps the [helo](https://github.com/helo-email/helo-sdk-go) Go SDK.
+CLI for Helo API. Wraps the [helo](https://github.com/helo-email/helo-sdk-go) Go SDK.
 
 ## Install
 

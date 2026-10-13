@@ -3,9 +3,7 @@ package commands
 import (
 	"github.com/spf13/cobra"
 
-	"fmt"
 	"github.com/helo-email/helo-sdk-go"
-	"time"
 )
 
 // NewStatisticsCmd builds the cobra command group for Statistics.
@@ -38,16 +36,16 @@ func newStatisticsRetrieveHourlyCmd() *cobra.Command {
 			params := &helo.StatisticsRetrieveHourlyParams{}
 			params.ChannelID = channelID
 			if from != "" {
-				t, err := time.Parse(time.RFC3339, from)
+				t, err := parseTimeFlag("from", from)
 				if err != nil {
-					return fmt.Errorf("invalid timestamp for --from: %w", err)
+					return err
 				}
 				params.From = t
 			}
 			if to != "" {
-				t, err := time.Parse(time.RFC3339, to)
+				t, err := parseTimeFlag("to", to)
 				if err != nil {
-					return fmt.Errorf("invalid timestamp for --to: %w", err)
+					return err
 				}
 				params.To = t
 			}
@@ -62,9 +60,9 @@ func newStatisticsRetrieveHourlyCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&channelID, "channel-id", "", "channelId")
-	cmd.Flags().StringVar(&from, "from", "", "from (required)")
+	cmd.Flags().StringVar(&from, "from", "", "from (required, RFC 3339 or a duration ago, e.g. 24h)")
 	_ = cmd.MarkFlagRequired("from")
-	cmd.Flags().StringVar(&to, "to", "", "to (required)")
+	cmd.Flags().StringVar(&to, "to", "", "to (required, RFC 3339 or a duration ago, e.g. 24h)")
 	_ = cmd.MarkFlagRequired("to")
 	cmd.Flags().StringSliceVar(&tags, "tags", nil, "tags")
 
@@ -87,14 +85,18 @@ func newStatisticsRetrieveDailyCmd() *cobra.Command {
 				return err
 			}
 			if from != "" {
-				if _, err := time.Parse(time.DateOnly, from); err != nil {
-					return fmt.Errorf("invalid value %q for --from: must be YYYY-MM-DD (e.g. 2025-02-27)", from)
+				d, err := parseDateFlag("from", from)
+				if err != nil {
+					return err
 				}
+				from = d
 			}
 			if to != "" {
-				if _, err := time.Parse(time.DateOnly, to); err != nil {
-					return fmt.Errorf("invalid value %q for --to: must be YYYY-MM-DD (e.g. 2025-02-27)", to)
+				d, err := parseDateFlag("to", to)
+				if err != nil {
+					return err
 				}
+				to = d
 			}
 
 			params := &helo.StatisticsRetrieveDailyParams{}
@@ -113,9 +115,9 @@ func newStatisticsRetrieveDailyCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&channelID, "channel-id", "", "channelId")
-	cmd.Flags().StringVar(&from, "from", "", "from (required)")
+	cmd.Flags().StringVar(&from, "from", "", "from (required, YYYY-MM-DD or a duration ago, e.g. 7d)")
 	_ = cmd.MarkFlagRequired("from")
-	cmd.Flags().StringVar(&to, "to", "", "to (required)")
+	cmd.Flags().StringVar(&to, "to", "", "to (required, YYYY-MM-DD or a duration ago, e.g. 7d)")
 	_ = cmd.MarkFlagRequired("to")
 	cmd.Flags().StringSliceVar(&tags, "tags", nil, "tags")
 	cmd.Flags().StringVar(&timezone, "timezone", "", "timezone (required)")
@@ -142,16 +144,16 @@ func newStatisticsRetrieveTotalsCmd() *cobra.Command {
 			params := &helo.StatisticsRetrieveTotalsParams{}
 			params.ChannelID = channelID
 			if from != "" {
-				t, err := time.Parse(time.RFC3339, from)
+				t, err := parseTimeFlag("from", from)
 				if err != nil {
-					return fmt.Errorf("invalid timestamp for --from: %w", err)
+					return err
 				}
 				params.From = t
 			}
 			if to != "" {
-				t, err := time.Parse(time.RFC3339, to)
+				t, err := parseTimeFlag("to", to)
 				if err != nil {
-					return fmt.Errorf("invalid timestamp for --to: %w", err)
+					return err
 				}
 				params.To = t
 			}
@@ -166,9 +168,9 @@ func newStatisticsRetrieveTotalsCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&channelID, "channel-id", "", "channelId")
-	cmd.Flags().StringVar(&from, "from", "", "from (required)")
+	cmd.Flags().StringVar(&from, "from", "", "from (required, RFC 3339 or a duration ago, e.g. 24h)")
 	_ = cmd.MarkFlagRequired("from")
-	cmd.Flags().StringVar(&to, "to", "", "to (required)")
+	cmd.Flags().StringVar(&to, "to", "", "to (required, RFC 3339 or a duration ago, e.g. 24h)")
 	_ = cmd.MarkFlagRequired("to")
 	cmd.Flags().StringSliceVar(&tags, "tags", nil, "tags")
 

@@ -5,7 +5,6 @@ import (
 
 	"fmt"
 	"github.com/helo-email/helo-sdk-go"
-	"time"
 )
 
 // NewBroadcastsCmd builds the cobra command group for Broadcasts.
@@ -51,16 +50,16 @@ func newBroadcastsListCmd() *cobra.Command {
 			params.Status = helo.BroadcastStatus(status)
 			params.Subject = subject
 			if from != "" {
-				t, err := time.Parse(time.RFC3339, from)
+				t, err := parseTimeFlag("from", from)
 				if err != nil {
-					return fmt.Errorf("invalid timestamp for --from: %w", err)
+					return err
 				}
 				params.From = t
 			}
 			if to != "" {
-				t, err := time.Parse(time.RFC3339, to)
+				t, err := parseTimeFlag("to", to)
 				if err != nil {
-					return fmt.Errorf("invalid timestamp for --to: %w", err)
+					return err
 				}
 				params.To = t
 			}
@@ -82,8 +81,8 @@ func newBroadcastsListCmd() *cobra.Command {
 		return []string{"accepted", "processing", "completed", "canceled"}, cobra.ShellCompDirectiveNoFileComp
 	})
 	cmd.Flags().StringVar(&subject, "subject", "", "subject")
-	cmd.Flags().StringVar(&from, "from", "", "from")
-	cmd.Flags().StringVar(&to, "to", "", "to")
+	cmd.Flags().StringVar(&from, "from", "", "from (RFC 3339 or a duration ago, e.g. 24h)")
+	cmd.Flags().StringVar(&to, "to", "", "to (RFC 3339 or a duration ago, e.g. 24h)")
 	cmd.Flags().IntVar(&limit, "limit", 0, "limit")
 	cmd.Flags().IntVar(&offset, "offset", 0, "offset")
 

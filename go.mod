@@ -12,4 +12,4 @@ require (
 	github.com/spf13/pflag v1.0.9 // indirect
 )
 
-replace github.com/helo-email/helo-sdk-go => /Users/balvig/Documents/helo-sdk-go
+replace github.com/helo-email/helo-sdk-go => /Users/jchoca/Development/helo/helo-sdk-go

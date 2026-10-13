@@ -5,7 +5,6 @@ import (
 
 	"fmt"
 	"github.com/helo-email/helo-sdk-go"
-	"time"
 )
 
 // NewActivityCmd builds the cobra command group for Activity.
@@ -61,16 +60,16 @@ func newActivityListEventsCmd() *cobra.Command {
 			params.MessageID = messageID
 			params.After = after
 			if startDate != "" {
-				t, err := time.Parse(time.RFC3339, startDate)
+				t, err := parseTimeFlag("start-date", startDate)
 				if err != nil {
-					return fmt.Errorf("invalid timestamp for --start-date: %w", err)
+					return err
 				}
 				params.StartDate = t
 			}
 			if endDate != "" {
-				t, err := time.Parse(time.RFC3339, endDate)
+				t, err := parseTimeFlag("end-date", endDate)
 				if err != nil {
-					return fmt.Errorf("invalid timestamp for --end-date: %w", err)
+					return err
 				}
 				params.EndDate = t
 			}
@@ -94,8 +93,8 @@ func newActivityListEventsCmd() *cobra.Command {
 	cmd.Flags().StringVar(&channelID, "channel-id", "", "channelId")
 	cmd.Flags().StringVar(&messageID, "message-id", "", "messageId")
 	cmd.Flags().Int64Var(&after, "after", 0, "after")
-	cmd.Flags().StringVar(&startDate, "start-date", "", "startDate")
-	cmd.Flags().StringVar(&endDate, "end-date", "", "endDate")
+	cmd.Flags().StringVar(&startDate, "start-date", "", "startDate (RFC 3339 or a duration ago, e.g. 24h)")
+	cmd.Flags().StringVar(&endDate, "end-date", "", "endDate (RFC 3339 or a duration ago, e.g. 24h)")
 	cmd.Flags().IntVar(&limit, "limit", 0, "limit")
 	cmd.Flags().StringVar(&recipient, "recipient", "", "recipient")
 	cmd.Flags().StringVar(&subject, "subject", "", "subject")
@@ -151,16 +150,16 @@ func newActivityListMessagesCmd() *cobra.Command {
 			params.ChannelID = channelID
 			params.After = after
 			if startDate != "" {
-				t, err := time.Parse(time.RFC3339, startDate)
+				t, err := parseTimeFlag("start-date", startDate)
 				if err != nil {
-					return fmt.Errorf("invalid timestamp for --start-date: %w", err)
+					return err
 				}
 				params.StartDate = t
 			}
 			if endDate != "" {
-				t, err := time.Parse(time.RFC3339, endDate)
+				t, err := parseTimeFlag("end-date", endDate)
 				if err != nil {
-					return fmt.Errorf("invalid timestamp for --end-date: %w", err)
+					return err
 				}
 				params.EndDate = t
 			}
@@ -181,8 +180,8 @@ func newActivityListMessagesCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&channelID, "channel-id", "", "channelId")
 	cmd.Flags().Int64Var(&after, "after", 0, "after")
-	cmd.Flags().StringVar(&startDate, "start-date", "", "startDate")
-	cmd.Flags().StringVar(&endDate, "end-date", "", "endDate")
+	cmd.Flags().StringVar(&startDate, "start-date", "", "startDate (RFC 3339 or a duration ago, e.g. 24h)")
+	cmd.Flags().StringVar(&endDate, "end-date", "", "endDate (RFC 3339 or a duration ago, e.g. 24h)")
 	cmd.Flags().IntVar(&limit, "limit", 0, "limit")
 	cmd.Flags().StringVar(&recipient, "recipient", "", "recipient")
 	cmd.Flags().StringVar(&subject, "subject", "", "subject")

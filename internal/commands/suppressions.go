@@ -111,19 +111,19 @@ func newSuppressionsCreateCmd() *cobra.Command {
 			if cmd.Flags().Changed("channel-id") {
 				params.ChannelID = channelID
 			}
-			if !cmd.Flags().Changed("channel-id") && !dataFields["channelId"] {
+			if !cmd.Flags().Changed("channel-id") && !dataFields.set["channelId"] {
 				return usageErrorf("--channel-id is required (or set \"channelId\" in --data)")
 			}
 			if cmd.Flags().Changed("mail-type") {
 				params.MailType = helo.MailType(mailType)
 			}
-			if !cmd.Flags().Changed("mail-type") && !dataFields["mailType"] {
+			if !cmd.Flags().Changed("mail-type") && !dataFields.set["mailType"] {
 				return usageErrorf("--mail-type is required (or set \"mailType\" in --data)")
 			}
 			if cmd.Flags().Changed("emails") {
 				params.Emails = emails
 			}
-			if !cmd.Flags().Changed("emails") && !dataFields["emails"] {
+			if !cmd.Flags().Changed("emails") && !dataFields.set["emails"] {
 				return usageErrorf("--emails is required (or set \"emails\" in --data)")
 			}
 
@@ -177,19 +177,19 @@ func newSuppressionsRemoveCmd() *cobra.Command {
 			if cmd.Flags().Changed("channel-id") {
 				params.ChannelID = channelID
 			}
-			if !cmd.Flags().Changed("channel-id") && !dataFields["channelId"] {
+			if !cmd.Flags().Changed("channel-id") && !dataFields.set["channelId"] {
 				return usageErrorf("--channel-id is required (or set \"channelId\" in --data)")
 			}
 			if cmd.Flags().Changed("mail-type") {
 				params.MailType = helo.MailType(mailType)
 			}
-			if !cmd.Flags().Changed("mail-type") && !dataFields["mailType"] {
+			if !cmd.Flags().Changed("mail-type") && !dataFields.set["mailType"] {
 				return usageErrorf("--mail-type is required (or set \"mailType\" in --data)")
 			}
 			if cmd.Flags().Changed("emails") {
 				params.Emails = emails
 			}
-			if !cmd.Flags().Changed("emails") && !dataFields["emails"] {
+			if !cmd.Flags().Changed("emails") && !dataFields.set["emails"] {
 				return usageErrorf("--emails is required (or set \"emails\" in --data)")
 			}
 

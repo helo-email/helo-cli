@@ -65,29 +65,36 @@ func decodeJSON(flag string, data []byte, v any) error {
 	return nil
 }
 
-// decodeBody parses --data, a whole request body, into v and reports which
-// top-level fields it set, so a required field can come from either --data
-// or its own flag.
-func decodeBody(value string, v any) (map[string]bool, error) {
+// bodyFields records the top-level fields --data set, and which it set to
+// null, so a required field can come from either --data or its own flag, and a
+// null can clear a field that accepts one.
+type bodyFields struct {
+	set  map[string]bool
+	null map[string]bool
+}
+
+// decodeBody parses --data, a whole request body, into v.
+func decodeBody(value string, v any) (bodyFields, error) {
+	fields := bodyFields{set: map[string]bool{}, null: map[string]bool{}}
 	if value == "" {
-		return map[string]bool{}, nil
+		return fields, nil
 	}
 	data, err := readInput("data", value)
 	if err != nil {
-		return nil, err
+		return fields, err
 	}
-	var fields map[string]json.RawMessage
-	if err := json.Unmarshal(data, &fields); err != nil {
-		return nil, output.Usagef("--data must be a JSON object: %v", err)
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return fields, output.Usagef("--data must be a JSON object: %v", err)
 	}
 	if err := decodeJSON("data", data, v); err != nil {
-		return nil, err
+		return fields, err
 	}
-	set := make(map[string]bool, len(fields))
-	for name := range fields {
-		set[name] = true
+	for name, value := range raw {
+		fields.set[name] = true
+		fields.null[name] = string(bytes.TrimSpace(value)) == "null"
 	}
-	return set, nil
+	return fields, nil
 }
 
 // envDefault returns value, or the environment variable name when value is empty.

@@ -85,7 +85,7 @@ func newWebhooksCreateCmd() *cobra.Command {
 			if cmd.Flags().Changed("url") {
 				params.URL = url
 			}
-			if !cmd.Flags().Changed("url") && !dataFields["url"] {
+			if !cmd.Flags().Changed("url") && !dataFields.set["url"] {
 				return usageErrorf("--url is required (or set \"url\" in --data)")
 			}
 			if cmd.Flags().Changed("events") {
@@ -94,7 +94,7 @@ func newWebhooksCreateCmd() *cobra.Command {
 					params.Events = append(params.Events, helo.WebhookEvent(v))
 				}
 			}
-			if !cmd.Flags().Changed("events") && !dataFields["events"] {
+			if !cmd.Flags().Changed("events") && !dataFields.set["events"] {
 				return usageErrorf("--events is required (or set \"events\" in --data)")
 			}
 			if cmd.Flags().Changed("channel-id") {
@@ -167,6 +167,8 @@ func newWebhooksUpdateCmd() *cobra.Command {
 	var channelID string
 	var additionalHeaders string
 	var enabled bool
+	var clearChannelID bool
+	var clearAdditionalHeaders bool
 	var requestData string
 
 	cmd := &cobra.Command{
@@ -185,7 +187,8 @@ func newWebhooksUpdateCmd() *cobra.Command {
 			id := args[0]
 
 			params := &helo.UpdateWebhookRequest{}
-			if _, err := decodeBody(requestData, params); err != nil {
+			dataFields, err := decodeBody(requestData, params)
+			if err != nil {
 				return err
 			}
 			if cmd.Flags().Changed("url") {
@@ -210,6 +213,19 @@ func newWebhooksUpdateCmd() *cobra.Command {
 			if cmd.Flags().Changed("enabled") {
 				params.Enabled = &enabled
 			}
+			// A null in --data, or a --clear-* flag, clears a field; setting the field's own flag wins over --data.
+			if clearChannelID && cmd.Flags().Changed("channel-id") {
+				return usageErrorf("--clear-channel-id and --channel-id can't be used together")
+			}
+			if clearChannelID || (dataFields.null["channelId"] && !cmd.Flags().Changed("channel-id")) {
+				params.NullFields = append(params.NullFields, "channelId")
+			}
+			if clearAdditionalHeaders && cmd.Flags().Changed("additional-headers") {
+				return usageErrorf("--clear-additional-headers and --additional-headers can't be used together")
+			}
+			if clearAdditionalHeaders || (dataFields.null["additionalHeaders"] && !cmd.Flags().Changed("additional-headers")) {
+				params.NullFields = append(params.NullFields, "additionalHeaders")
+			}
 
 			client, err := newClient()
 			if err != nil {
@@ -228,9 +244,11 @@ func newWebhooksUpdateCmd() *cobra.Command {
 	_ = cmd.RegisterFlagCompletionFunc("events", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return []string{"message-accepted", "message-processed", "email-delivered", "email-bounced", "email-opened", "link-clicked", "recipient-complained", "recipient-unsubscribed", "recipient-resubscribed", "domain-key-verified", "domain-key-verification-failed", "return-path-domain-verified", "return-path-domain-verification-failed"}, cobra.ShellCompDirectiveNoFileComp
 	})
-	cmd.Flags().StringVar(&channelID, "channel-id", "", "Set to a UUID to scope to a channel, or null to remove channel scoping")
-	cmd.Flags().StringVar(&additionalHeaders, "additional-headers", "", "Replaces all custom headers. Set to null to remove all custom headers (JSON: [{\"name\": string, \"value\": string}]; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&channelID, "channel-id", "", "Set to a UUID to scope to a channel, or null to remove channel scoping (--clear-channel-id sends null)")
+	cmd.Flags().StringVar(&additionalHeaders, "additional-headers", "", "Replaces all custom headers. Set to null to remove all custom headers (JSON: [{\"name\": string, \"value\": string}]; @file or @- reads it from a file or stdin; --clear-additional-headers sends null)")
 	cmd.Flags().BoolVar(&enabled, "enabled", false, "Enables or disables the webhook")
+	cmd.Flags().BoolVar(&clearChannelID, "clear-channel-id", false, "Clear channelId by sending it as null")
+	cmd.Flags().BoolVar(&clearAdditionalHeaders, "clear-additional-headers", false, "Clear additionalHeaders by sending it as null")
 	cmd.Flags().StringVar(&requestData, "data", "", "The whole request body as JSON (inline, @file, or @- for stdin); other flags override its fields")
 
 	return cmd

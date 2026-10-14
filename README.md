@@ -8,6 +8,11 @@ CLI for Helo API. Wraps the [helo](https://github.com/helo-email/helo-sdk-go) Go
 go install github.com/helo-email/helo-cli/cmd/helo@latest
 ```
 
+`@latest` is the newest release; pin one with `@v0.1.0`, say. `helo --version` reports the
+release and the SDK version it was built with. Each release's notes are in [CHANGELOG.md](CHANGELOG.md) and on
+the repository's GitHub releases.
+
+
 Or build from a local checkout:
 
 ```bash

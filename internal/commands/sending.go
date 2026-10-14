@@ -56,7 +56,7 @@ func newSendingSendTransactionalCmd() *cobra.Command {
 				}
 				params.From = v
 			}
-			if !cmd.Flags().Changed("from") && !dataFields["from"] {
+			if !cmd.Flags().Changed("from") && !dataFields.set["from"] {
 				return usageErrorf("--from is required (or set \"from\" in --data)")
 			}
 			if cmd.Flags().Changed("to") {
@@ -66,7 +66,7 @@ func newSendingSendTransactionalCmd() *cobra.Command {
 				}
 				params.To = v
 			}
-			if !cmd.Flags().Changed("to") && !dataFields["to"] {
+			if !cmd.Flags().Changed("to") && !dataFields.set["to"] {
 				return usageErrorf("--to is required (or set \"to\" in --data)")
 			}
 			if cmd.Flags().Changed("cc") {
@@ -200,7 +200,7 @@ func newSendingSendTransactionalBatchCmd() *cobra.Command {
 				}
 				params.Requests = v
 			}
-			if !cmd.Flags().Changed("requests") && !dataFields["requests"] {
+			if !cmd.Flags().Changed("requests") && !dataFields.set["requests"] {
 				return usageErrorf("--requests is required (or set \"requests\" in --data)")
 			}
 
@@ -261,7 +261,7 @@ func newSendingSendBroadcastCmd() *cobra.Command {
 				}
 				params.From = v
 			}
-			if !cmd.Flags().Changed("from") && !dataFields["from"] {
+			if !cmd.Flags().Changed("from") && !dataFields.set["from"] {
 				return usageErrorf("--from is required (or set \"from\" in --data)")
 			}
 			if cmd.Flags().Changed("reply-to") {
@@ -278,7 +278,7 @@ func newSendingSendBroadcastCmd() *cobra.Command {
 				}
 				params.Template = v
 			}
-			if !cmd.Flags().Changed("template") && !dataFields["template"] {
+			if !cmd.Flags().Changed("template") && !dataFields.set["template"] {
 				return usageErrorf("--template is required (or set \"template\" in --data)")
 			}
 			if cmd.Flags().Changed("tracking") {
@@ -319,7 +319,7 @@ func newSendingSendBroadcastCmd() *cobra.Command {
 				}
 				params.Messages = v
 			}
-			if !cmd.Flags().Changed("messages") && !dataFields["messages"] {
+			if !cmd.Flags().Changed("messages") && !dataFields.set["messages"] {
 				return usageErrorf("--messages is required (or set \"messages\" in --data)")
 			}
 
@@ -393,7 +393,7 @@ func newSendingSendBroadcastMessageCmd() *cobra.Command {
 				}
 				params.From = v
 			}
-			if !cmd.Flags().Changed("from") && !dataFields["from"] {
+			if !cmd.Flags().Changed("from") && !dataFields.set["from"] {
 				return usageErrorf("--from is required (or set \"from\" in --data)")
 			}
 			if cmd.Flags().Changed("to") {
@@ -403,7 +403,7 @@ func newSendingSendBroadcastMessageCmd() *cobra.Command {
 				}
 				params.To = v
 			}
-			if !cmd.Flags().Changed("to") && !dataFields["to"] {
+			if !cmd.Flags().Changed("to") && !dataFields.set["to"] {
 				return usageErrorf("--to is required (or set \"to\" in --data)")
 			}
 			if cmd.Flags().Changed("cc") {

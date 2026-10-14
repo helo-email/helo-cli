@@ -3,7 +3,7 @@ module github.com/helo-email/helo-cli
 go 1.22
 
 require (
-	github.com/helo-email/helo-sdk-go v1.2.0
+	github.com/helo-email/helo-sdk-go v1.3.0
 	github.com/spf13/cobra v1.10.1
 )
 

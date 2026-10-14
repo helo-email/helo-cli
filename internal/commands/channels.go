@@ -98,13 +98,13 @@ func newChannelsCreateCmd() *cobra.Command {
 			if cmd.Flags().Changed("name") {
 				params.Name = name
 			}
-			if !cmd.Flags().Changed("name") && !dataFields["name"] {
+			if !cmd.Flags().Changed("name") && !dataFields.set["name"] {
 				return usageErrorf("--name is required (or set \"name\" in --data)")
 			}
 			if cmd.Flags().Changed("delivery-type") {
 				params.DeliveryType = helo.DeliveryType(deliveryType)
 			}
-			if !cmd.Flags().Changed("delivery-type") && !dataFields["deliveryType"] {
+			if !cmd.Flags().Changed("delivery-type") && !dataFields.set["deliveryType"] {
 				return usageErrorf("--delivery-type is required (or set \"deliveryType\" in --data)")
 			}
 			if cmd.Flags().Changed("tracking") {

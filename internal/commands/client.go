@@ -32,7 +32,15 @@ func buildUserAgent() string {
 		sanitizeVersion(cliVersion()), runtime.Version(), runtime.GOOS, runtime.GOARCH)
 }
 
+// version is the release tag, set by the release workflow's builds with
+// -ldflags "-X github.com/helo-email/helo-cli/internal/commands.version=<tag>". `go install`
+// leaves it empty, and the version comes from the build info instead.
+var version string
+
 func cliVersion() string {
+	if version != "" {
+		return version
+	}
 	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" {
 		return info.Main.Version
 	}

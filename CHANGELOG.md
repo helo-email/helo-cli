@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1
+
+- Releases now include prebuilt binaries for macOS, Linux and Windows on amd64 and arm64, with a
+  `checksums.txt`, so `helo` can be installed without Go: see the README. `helo --version` reports the
+  release in these builds too.
+
 ## 0.1.0
 
 - First release. `helo` has a command for every operation in the Helo API: channels, domains, sending,

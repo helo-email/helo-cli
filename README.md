@@ -4,11 +4,24 @@ CLI for Helo API. Wraps the [helo](https://github.com/helo-email/helo-sdk-go) Go
 
 ## Install
 
+Download a prebuilt binary from the [latest release](https://github.com/helo-email/helo-cli/releases/latest), for macOS, Linux or
+Windows on amd64 or arm64. On macOS or Linux:
+
+```bash
+os=$(uname -s | tr '[:upper:]' '[:lower:]')
+arch=$(uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')
+curl -fsSL "https://github.com/helo-email/helo-cli/releases/latest/download/helo_${os}_${arch}.tar.gz" \
+  | tar -xz -C ~/.local/bin helo
+```
+
+That installs into `~/.local/bin`, which must exist and be on your `PATH`; use another directory if you
+prefer. Each release also has a `checksums.txt` of SHA-256 sums. Or, with Go installed:
+
 ```bash
 go install github.com/helo-email/helo-cli/cmd/helo@latest
 ```
 
-`@latest` is the newest release; pin one with `@v0.1.0`, say. `helo --version` reports the
+`@latest` is the newest release; pin one with `@v0.1.1`, say. `helo --version` reports the
 release and the SDK version it was built with. Each release's notes are in [CHANGELOG.md](CHANGELOG.md) and on
 the repository's GitHub releases.
 

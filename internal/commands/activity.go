@@ -3,7 +3,6 @@ package commands
 import (
 	"github.com/spf13/cobra"
 
-	"fmt"
 	"github.com/helo-email/helo-sdk-go"
 )
 
@@ -35,23 +34,20 @@ func newActivityListEventsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list-events",
 		Short: "List activity events",
+		Long:  "Retrieves activity events for messages, including delivery status, opens, clicks, bounces, unsubscribes and complaints.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := newClient()
-			if err != nil {
-				return err
-			}
 			if mailType != "" {
 				switch mailType {
 				case "transactional", "broadcast":
 				default:
-					return fmt.Errorf("invalid value %q for --mail-type: must be one of transactional|broadcast", mailType)
+					return usageErrorf("invalid value %q for --mail-type: must be one of transactional|broadcast", mailType)
 				}
 			}
 			for _, v := range eventTypes {
 				switch v {
 				case "accepted", "processed", "delivered", "bounced", "opened", "clicked", "complained", "unsubscribed", "resubscribed":
 				default:
-					return fmt.Errorf("invalid value %q for --event-types: must be one of accepted|processed|delivered|bounced|opened|clicked|complained|unsubscribed|resubscribed", v)
+					return usageErrorf("invalid value %q for --event-types: must be one of accepted|processed|delivered|bounced|opened|clicked|complained|unsubscribed|resubscribed", v)
 				}
 			}
 
@@ -62,14 +58,14 @@ func newActivityListEventsCmd() *cobra.Command {
 			if startDate != "" {
 				t, err := parseTimeFlag("start-date", startDate)
 				if err != nil {
-					return err
+					return usageError(err)
 				}
 				params.StartDate = t
 			}
 			if endDate != "" {
 				t, err := parseTimeFlag("end-date", endDate)
 				if err != nil {
-					return err
+					return usageError(err)
 				}
 				params.EndDate = t
 			}
@@ -82,6 +78,10 @@ func newActivityListEventsCmd() *cobra.Command {
 				params.EventTypes = append(params.EventTypes, helo.EventType(v))
 			}
 
+			client, err := newClient()
+			if err != nil {
+				return err
+			}
 			result, err := client.Activity.ListEvents(cmd.Context(), params)
 			if err != nil {
 				return err
@@ -95,15 +95,15 @@ func newActivityListEventsCmd() *cobra.Command {
 	cmd.Flags().Int64Var(&after, "after", 0, "after")
 	cmd.Flags().StringVar(&startDate, "start-date", "", "startDate (RFC 3339 or a duration ago, e.g. 24h)")
 	cmd.Flags().StringVar(&endDate, "end-date", "", "endDate (RFC 3339 or a duration ago, e.g. 24h)")
-	cmd.Flags().IntVar(&limit, "limit", 0, "limit")
+	cmd.Flags().IntVar(&limit, "limit", 0, "limit (max 500)")
 	cmd.Flags().StringVar(&recipient, "recipient", "", "recipient")
 	cmd.Flags().StringVar(&subject, "subject", "", "subject")
-	cmd.Flags().StringSliceVar(&tags, "tags", nil, "tags")
+	cmd.Flags().StringSliceVar(&tags, "tags", nil, "tags (comma-separated)")
 	cmd.Flags().StringVar(&mailType, "mail-type", "", "mailType (one of: transactional|broadcast)")
 	_ = cmd.RegisterFlagCompletionFunc("mail-type", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return []string{"transactional", "broadcast"}, cobra.ShellCompDirectiveNoFileComp
 	})
-	cmd.Flags().StringSliceVar(&eventTypes, "event-types", nil, "eventTypes (one of: accepted|processed|delivered|bounced|opened|clicked|complained|unsubscribed|resubscribed)")
+	cmd.Flags().StringSliceVar(&eventTypes, "event-types", nil, "eventTypes (one of: accepted|processed|delivered|bounced|opened|clicked|complained|unsubscribed|resubscribed; comma-separated)")
 	_ = cmd.RegisterFlagCompletionFunc("event-types", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return []string{"accepted", "processed", "delivered", "bounced", "opened", "clicked", "complained", "unsubscribed", "resubscribed"}, cobra.ShellCompDirectiveNoFileComp
 	})
@@ -126,23 +126,20 @@ func newActivityListMessagesCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list-messages",
 		Short: "List messages",
+		Long:  "Retrieves a paginated list of sent messages with basic tracking information.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := newClient()
-			if err != nil {
-				return err
-			}
 			if mailType != "" {
 				switch mailType {
 				case "transactional", "broadcast":
 				default:
-					return fmt.Errorf("invalid value %q for --mail-type: must be one of transactional|broadcast", mailType)
+					return usageErrorf("invalid value %q for --mail-type: must be one of transactional|broadcast", mailType)
 				}
 			}
 			if status != "" {
 				switch status {
 				case "queued", "sent":
 				default:
-					return fmt.Errorf("invalid value %q for --status: must be one of queued|sent", status)
+					return usageErrorf("invalid value %q for --status: must be one of queued|sent", status)
 				}
 			}
 
@@ -152,14 +149,14 @@ func newActivityListMessagesCmd() *cobra.Command {
 			if startDate != "" {
 				t, err := parseTimeFlag("start-date", startDate)
 				if err != nil {
-					return err
+					return usageError(err)
 				}
 				params.StartDate = t
 			}
 			if endDate != "" {
 				t, err := parseTimeFlag("end-date", endDate)
 				if err != nil {
-					return err
+					return usageError(err)
 				}
 				params.EndDate = t
 			}
@@ -170,6 +167,10 @@ func newActivityListMessagesCmd() *cobra.Command {
 			params.MailType = mailType
 			params.Status = helo.MessageStatus(status)
 
+			client, err := newClient()
+			if err != nil {
+				return err
+			}
 			result, err := client.Activity.ListMessages(cmd.Context(), params)
 			if err != nil {
 				return err
@@ -182,10 +183,10 @@ func newActivityListMessagesCmd() *cobra.Command {
 	cmd.Flags().Int64Var(&after, "after", 0, "after")
 	cmd.Flags().StringVar(&startDate, "start-date", "", "startDate (RFC 3339 or a duration ago, e.g. 24h)")
 	cmd.Flags().StringVar(&endDate, "end-date", "", "endDate (RFC 3339 or a duration ago, e.g. 24h)")
-	cmd.Flags().IntVar(&limit, "limit", 0, "limit")
+	cmd.Flags().IntVar(&limit, "limit", 0, "limit (max 100)")
 	cmd.Flags().StringVar(&recipient, "recipient", "", "recipient")
 	cmd.Flags().StringVar(&subject, "subject", "", "subject")
-	cmd.Flags().StringSliceVar(&tags, "tags", nil, "tags")
+	cmd.Flags().StringSliceVar(&tags, "tags", nil, "tags (comma-separated)")
 	cmd.Flags().StringVar(&mailType, "mail-type", "", "mailType (one of: transactional|broadcast)")
 	_ = cmd.RegisterFlagCompletionFunc("mail-type", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return []string{"transactional", "broadcast"}, cobra.ShellCompDirectiveNoFileComp
@@ -203,14 +204,15 @@ func newActivityRetrieveMessageCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "retrieve-message <id>",
 		Short: "Retrieve message details",
+		Long:  "Fetches detailed tracking information for a specific message, including all associated events.",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			id := args[0]
+
 			client, err := newClient()
 			if err != nil {
 				return err
 			}
-			id := args[0]
-
 			result, err := client.Activity.RetrieveMessage(cmd.Context(), id)
 			if err != nil {
 				return err

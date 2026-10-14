@@ -3,11 +3,16 @@
 package commands
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"runtime"
 	"runtime/debug"
+	"sort"
 	"strings"
 	"sync"
 
@@ -23,12 +28,35 @@ import (
 var userAgent = buildUserAgent()
 
 func buildUserAgent() string {
-	version := "unknown"
-	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" {
-		version = info.Main.Version
-	}
 	return fmt.Sprintf("helo-cli/%s (%s; %s/%s)",
-		sanitizeVersion(version), runtime.Version(), runtime.GOOS, runtime.GOARCH)
+		sanitizeVersion(cliVersion()), runtime.Version(), runtime.GOOS, runtime.GOARCH)
+}
+
+func cliVersion() string {
+	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" {
+		return info.Main.Version
+	}
+	return "unknown"
+}
+
+// Version describes the CLI build and the SDK version compiled into it.
+func Version() string {
+	sdkVersion := "unknown"
+	if info, ok := debug.ReadBuildInfo(); ok {
+		for _, dep := range info.Deps {
+			if dep.Path == "github.com/helo-email/helo-sdk-go" {
+				sdkVersion = dep.Version
+				if dep.Replace != nil {
+					sdkVersion = dep.Replace.Version
+				}
+				break
+			}
+		}
+	}
+	if sdkVersion == "" {
+		sdkVersion = "local"
+	}
+	return fmt.Sprintf("%s (helo-sdk-go %s)", cliVersion(), sdkVersion)
 }
 
 // A module version can be a placeholder like "(devel)" for an untagged local
@@ -54,6 +82,7 @@ type GlobalFlags struct {
 	BaseURL string
 	JSON    bool
 	Quiet   bool
+	DryRun  bool
 }
 
 var (
@@ -75,16 +104,26 @@ func Flags() GlobalFlags {
 	return currentFlags
 }
 
+// Environment variables the API key is read from, in order, after --token.
+// HELO_API_KEY is the name the API documentation uses.
+var tokenEnvVars = []string{"HELO_API_KEY", "HELO_TOKEN"}
+
 // newClient builds an SDK client from the current flags + environment.
 func newClient() (*helo.Helo, error) {
 	f := Flags()
 
 	token := f.Token
-	if token == "" {
-		token = os.Getenv("HELO_TOKEN")
+	for _, name := range tokenEnvVars {
+		if token != "" {
+			break
+		}
+		token = os.Getenv(name)
+	}
+	if token == "" && f.DryRun {
+		token = "dry-run" // never sent, and redacted from the printed request
 	}
 	if token == "" {
-		return nil, errors.New("authentication token not set; provide --token or export HELO_TOKEN")
+		return nil, &output.CredentialsError{Message: "no API key: pass --token or set $" + strings.Join(tokenEnvVars, " or $")}
 	}
 
 	opts := []helo.HeloOption{
@@ -97,8 +136,69 @@ func newClient() (*helo.Helo, error) {
 	if baseURL != "" {
 		opts = append(opts, helo.WithBaseURL(baseURL))
 	}
+	if f.DryRun {
+		opts = append(opts, helo.WithHTTPClient(&http.Client{Transport: dryRunTransport{quiet: f.Quiet}}))
+	}
 
 	return helo.NewHelo(token, opts...), nil
+}
+
+// ErrDryRun stops a --dry-run request once it has been printed.
+var ErrDryRun = errors.New("dry run: request not sent")
+
+// IsDryRun reports whether err is a --dry-run request stopping as intended.
+func IsDryRun(err error) bool {
+	return errors.Is(err, ErrDryRun)
+}
+
+// dryRunTransport prints each request instead of sending it.
+type dryRunTransport struct {
+	quiet bool
+}
+
+type dryRunRequest struct {
+	Method  string            `json:"method"`
+	URL     string            `json:"url"`
+	Headers map[string]string `json:"headers"`
+	Body    any               `json:"body,omitempty"`
+}
+
+func (t dryRunTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	printed := dryRunRequest{Method: req.Method, URL: req.URL.String(), Headers: map[string]string{}}
+	keys := make([]string, 0, len(req.Header))
+	for key := range req.Header {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		value := req.Header.Get(key)
+		if strings.EqualFold(key, "Authorization") {
+			value = "Bearer <redacted>"
+		}
+		printed.Headers[key] = value
+	}
+	if req.Body != nil {
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			return nil, err
+		}
+		// Decoded so it prints as readable JSON: the SDK's encoding escapes the
+		// <, > and & that email bodies are full of.
+		dec := json.NewDecoder(bytes.NewReader(body))
+		dec.UseNumber()
+		if err := dec.Decode(&printed.Body); err != nil {
+			printed.Body = string(body)
+		}
+	}
+
+	var data any = map[string]any{"dryRun": true, "request": printed}
+	if t.quiet {
+		data = printed
+	}
+	if err := output.PrintJSON(os.Stdout, data, output.PrintOptions{Quiet: t.quiet}); err != nil {
+		return nil, err
+	}
+	return nil, ErrDryRun
 }
 
 // emit writes a successful result using the configured output mode.

@@ -3,8 +3,6 @@ package commands
 import (
 	"github.com/spf13/cobra"
 
-	"encoding/json"
-	"fmt"
 	"github.com/helo-email/helo-sdk-go"
 )
 
@@ -38,101 +36,116 @@ func newSendingSendTransactionalCmd() *cobra.Command {
 	var metadata string
 	var channelID string
 	var idempotencyKey string
+	var requestData string
 
 	cmd := &cobra.Command{
 		Use:   "send-transactional",
 		Short: "Send a transactional email",
+		Long:  "Sends a single transactional email such as receipts, confirmations, or notifications.\n\nSet the request body's fields with flags, or pass the whole body as JSON with --data (inline, @file, or @- for stdin); flags override fields from --data.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := newClient()
+
+			params := &helo.SendMessageRequest{}
+			dataFields, err := decodeBody(requestData, params)
 			if err != nil {
 				return err
 			}
-
-			params := &helo.SendMessageRequest{}
-			if from != "" {
+			if cmd.Flags().Changed("from") {
 				var v helo.MailAddress
-				if err := json.Unmarshal([]byte(from), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --from: %w", err)
+				if err := decodeJSONFlag("from", from, &v); err != nil {
+					return err
 				}
 				params.From = v
 			}
-			if from == "" {
-				return fmt.Errorf("--from is required")
+			if !cmd.Flags().Changed("from") && !dataFields["from"] {
+				return usageErrorf("--from is required (or set \"from\" in --data)")
 			}
-			if to != "" {
+			if cmd.Flags().Changed("to") {
 				var v []helo.MailAddress
-				if err := json.Unmarshal([]byte(to), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --to: %w", err)
+				if err := decodeJSONFlag("to", to, &v); err != nil {
+					return err
 				}
 				params.To = v
 			}
-			if to == "" {
-				return fmt.Errorf("--to is required")
+			if !cmd.Flags().Changed("to") && !dataFields["to"] {
+				return usageErrorf("--to is required (or set \"to\" in --data)")
 			}
-			if cc != "" {
+			if cmd.Flags().Changed("cc") {
 				var v []helo.MailAddress
-				if err := json.Unmarshal([]byte(cc), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --cc: %w", err)
+				if err := decodeJSONFlag("cc", cc, &v); err != nil {
+					return err
 				}
 				params.Cc = v
 			}
-			if bcc != "" {
+			if cmd.Flags().Changed("bcc") {
 				var v []helo.MailAddress
-				if err := json.Unmarshal([]byte(bcc), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --bcc: %w", err)
+				if err := decodeJSONFlag("bcc", bcc, &v); err != nil {
+					return err
 				}
 				params.Bcc = v
 			}
-			if replyTo != "" {
+			if cmd.Flags().Changed("reply-to") {
 				var v []helo.MailAddress
-				if err := json.Unmarshal([]byte(replyTo), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --reply-to: %w", err)
+				if err := decodeJSONFlag("reply-to", replyTo, &v); err != nil {
+					return err
 				}
 				params.ReplyTo = v
 			}
-			params.Subject = subject
-			params.Html = html
-			params.Text = text
-			if template != "" {
+			if cmd.Flags().Changed("subject") {
+				params.Subject = subject
+			}
+			if cmd.Flags().Changed("html") {
+				params.Html = html
+			}
+			if cmd.Flags().Changed("text") {
+				params.Text = text
+			}
+			if cmd.Flags().Changed("template") {
 				var v helo.SendMessageRequestTemplate
-				if err := json.Unmarshal([]byte(template), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --template: %w", err)
+				if err := decodeJSONFlag("template", template, &v); err != nil {
+					return err
 				}
 				params.Template = &v
 			}
-			if tracking != "" {
+			if cmd.Flags().Changed("tracking") {
 				var v helo.SendMessageRequestTracking
-				if err := json.Unmarshal([]byte(tracking), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --tracking: %w", err)
+				if err := decodeJSONFlag("tracking", tracking, &v); err != nil {
+					return err
 				}
 				params.Tracking = &v
 			}
-			if attachments != "" {
+			if cmd.Flags().Changed("attachments") {
 				var v []helo.Attachment
-				if err := json.Unmarshal([]byte(attachments), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --attachments: %w", err)
+				if err := decodeJSONFlag("attachments", attachments, &v); err != nil {
+					return err
 				}
 				params.Attachments = v
 			}
-			params.Tags = tags
-			if headers != "" {
+			if cmd.Flags().Changed("tags") {
+				params.Tags = tags
+			}
+			if cmd.Flags().Changed("headers") {
 				var v map[string]any
-				if err := json.Unmarshal([]byte(headers), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --headers: %w", err)
+				if err := decodeJSONFlag("headers", headers, &v); err != nil {
+					return err
 				}
 				params.Headers = v
 			}
-			if metadata != "" {
+			if cmd.Flags().Changed("metadata") {
 				var v map[string]any
-				if err := json.Unmarshal([]byte(metadata), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --metadata: %w", err)
+				if err := decodeJSONFlag("metadata", metadata, &v); err != nil {
+					return err
 				}
 				params.Metadata = v
 			}
 
+			channelID = envDefault(channelID, channelIDEnv)
 			opts := &helo.SendingSendTransactionalOptions{
 				ChannelID:      channelID,
 				IdempotencyKey: idempotencyKey,
+			}
+			client, err := newClient()
+			if err != nil {
+				return err
 			}
 			result, err := client.Sending.SendTransactional(cmd.Context(), params, opts)
 			if err != nil {
@@ -142,24 +155,23 @@ func newSendingSendTransactionalCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&from, "from", "", "from (JSON, required)")
-	_ = cmd.MarkFlagRequired("from")
-	cmd.Flags().StringVar(&to, "to", "", "to (JSON, required)")
-	_ = cmd.MarkFlagRequired("to")
-	cmd.Flags().StringVar(&cc, "cc", "", "cc (JSON)")
-	cmd.Flags().StringVar(&bcc, "bcc", "", "bcc (JSON)")
-	cmd.Flags().StringVar(&replyTo, "reply-to", "", "replyTo (JSON)")
+	cmd.Flags().StringVar(&from, "from", "", "from (required; JSON: {\"email\": string, \"name\": string}; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&to, "to", "", "to (required; JSON: [{\"email\": string, \"name\": string}]; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&cc, "cc", "", "cc (JSON: [{\"email\": string, \"name\": string}]; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&bcc, "bcc", "", "bcc (JSON: [{\"email\": string, \"name\": string}]; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&replyTo, "reply-to", "", "replyTo (JSON: [{\"email\": string, \"name\": string}]; @file or @- reads it from a file or stdin)")
 	cmd.Flags().StringVar(&subject, "subject", "", "subject")
 	cmd.Flags().StringVar(&html, "html", "", "html")
 	cmd.Flags().StringVar(&text, "text", "", "text")
-	cmd.Flags().StringVar(&template, "template", "", "template (JSON)")
-	cmd.Flags().StringVar(&tracking, "tracking", "", "tracking (JSON)")
-	cmd.Flags().StringVar(&attachments, "attachments", "", "attachments (JSON)")
-	cmd.Flags().StringSliceVar(&tags, "tags", nil, "tags")
-	cmd.Flags().StringVar(&headers, "headers", "", "headers (JSON)")
-	cmd.Flags().StringVar(&metadata, "metadata", "", "metadata (JSON)")
-	cmd.Flags().StringVar(&channelID, "channel-id", "", "Used to specify a channel ID for sending when using an account-level API credential.")
-	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "A unique identifier used to prevent duplicate messages being sent when retrying failed requests.")
+	cmd.Flags().StringVar(&template, "template", "", "Either reference a stored template by 'id', or supply 'subject' and at least one of 'html' or 'text' inline (JSON: {\"id\": string, \"subject\": string, \"html\": string, \"text\": string, \"inlineStyles\": boolean, \"data\": object}; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&tracking, "tracking", "", "tracking (JSON: {\"opens\": boolean, \"links\": boolean}; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&attachments, "attachments", "", "attachments (JSON: [{\"content\": base64 string, \"contentId\": string, \"contentType\": string, \"fileName\": string, \"disposition\": \"attachment\"|\"inline\"}]; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringSliceVar(&tags, "tags", nil, "tags (comma-separated)")
+	cmd.Flags().StringVar(&headers, "headers", "", "headers (JSON: {string: string}; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&metadata, "metadata", "", "metadata (JSON: {string: string}; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&requestData, "data", "", "The whole request body as JSON (inline, @file, or @- for stdin); other flags override its fields")
+	cmd.Flags().StringVar(&channelID, "channel-id", "", "Used to specify a channel ID for sending when using an account-level API credential (default $HELO_CHANNEL_ID)")
+	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "A unique identifier used to prevent duplicate messages being sent when retrying failed requests (max length 36)")
 
 	return cmd
 }
@@ -168,31 +180,38 @@ func newSendingSendTransactionalBatchCmd() *cobra.Command {
 	var requests string
 	var channelID string
 	var idempotencyKey string
+	var requestData string
 
 	cmd := &cobra.Command{
 		Use:   "send-transactional-batch",
 		Short: "Send transactional emails in batch",
+		Long:  "Sends multiple transactional emails in a single API request for better performance.\n\nSet the request body's fields with flags, or pass the whole body as JSON with --data (inline, @file, or @- for stdin); flags override fields from --data.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := newClient()
+
+			params := &helo.SendMessageBatchRequest{}
+			dataFields, err := decodeBody(requestData, params)
 			if err != nil {
 				return err
 			}
-
-			params := &helo.SendMessageBatchRequest{}
-			if requests != "" {
+			if cmd.Flags().Changed("requests") {
 				var v []helo.SendMessageRequest
-				if err := json.Unmarshal([]byte(requests), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --requests: %w", err)
+				if err := decodeJSONFlag("requests", requests, &v); err != nil {
+					return err
 				}
 				params.Requests = v
 			}
-			if requests == "" {
-				return fmt.Errorf("--requests is required")
+			if !cmd.Flags().Changed("requests") && !dataFields["requests"] {
+				return usageErrorf("--requests is required (or set \"requests\" in --data)")
 			}
 
+			channelID = envDefault(channelID, channelIDEnv)
 			opts := &helo.SendingSendTransactionalBatchOptions{
 				ChannelID:      channelID,
 				IdempotencyKey: idempotencyKey,
+			}
+			client, err := newClient()
+			if err != nil {
+				return err
 			}
 			result, err := client.Sending.SendTransactionalBatch(cmd.Context(), params, opts)
 			if err != nil {
@@ -202,10 +221,10 @@ func newSendingSendTransactionalBatchCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&requests, "requests", "", "requests (JSON, required)")
-	_ = cmd.MarkFlagRequired("requests")
-	cmd.Flags().StringVar(&channelID, "channel-id", "", "Used to specify a channel ID for sending when using an account-level API credential.")
-	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "A unique identifier used to prevent duplicate messages being sent when retrying failed requests.")
+	cmd.Flags().StringVar(&requests, "requests", "", "requests (required; JSON: [{\"from\": {…}, \"to\": [{…}], \"cc\": [{…}], \"bcc\": [{…}], \"replyTo\": [{…}], \"subject\": string, \"html\": string, \"text\": string, \"template\": {…}, \"tracking\": {…}, \"attachments\": [{…}], \"tags\": [string], \"headers\": {string: string}, \"metadata\": {string: string}}]; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&requestData, "data", "", "The whole request body as JSON (inline, @file, or @- for stdin); other flags override its fields")
+	cmd.Flags().StringVar(&channelID, "channel-id", "", "Used to specify a channel ID for sending when using an account-level API credential (default $HELO_CHANNEL_ID)")
+	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "A unique identifier used to prevent duplicate messages being sent when retrying failed requests (max length 36)")
 
 	return cmd
 }
@@ -222,87 +241,96 @@ func newSendingSendBroadcastCmd() *cobra.Command {
 	var messages string
 	var channelID string
 	var idempotencyKey string
+	var requestData string
 
 	cmd := &cobra.Command{
 		Use:   "send-broadcast",
 		Short: "Send a broadcast",
+		Long:  "Sends a broadcast of multiple messages for marketing or announcement purposes.\n\nSet the request body's fields with flags, or pass the whole body as JSON with --data (inline, @file, or @- for stdin); flags override fields from --data.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := newClient()
+
+			params := &helo.SendBroadcastRequest{}
+			dataFields, err := decodeBody(requestData, params)
 			if err != nil {
 				return err
 			}
-
-			params := &helo.SendBroadcastRequest{}
-			if from != "" {
+			if cmd.Flags().Changed("from") {
 				var v helo.MailAddress
-				if err := json.Unmarshal([]byte(from), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --from: %w", err)
+				if err := decodeJSONFlag("from", from, &v); err != nil {
+					return err
 				}
 				params.From = v
 			}
-			if from == "" {
-				return fmt.Errorf("--from is required")
+			if !cmd.Flags().Changed("from") && !dataFields["from"] {
+				return usageErrorf("--from is required (or set \"from\" in --data)")
 			}
-			if replyTo != "" {
+			if cmd.Flags().Changed("reply-to") {
 				var v []helo.MailAddress
-				if err := json.Unmarshal([]byte(replyTo), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --reply-to: %w", err)
+				if err := decodeJSONFlag("reply-to", replyTo, &v); err != nil {
+					return err
 				}
 				params.ReplyTo = v
 			}
-			if template != "" {
+			if cmd.Flags().Changed("template") {
 				var v helo.SendBroadcastRequestTemplate
-				if err := json.Unmarshal([]byte(template), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --template: %w", err)
+				if err := decodeJSONFlag("template", template, &v); err != nil {
+					return err
 				}
 				params.Template = v
 			}
-			if template == "" {
-				return fmt.Errorf("--template is required")
+			if !cmd.Flags().Changed("template") && !dataFields["template"] {
+				return usageErrorf("--template is required (or set \"template\" in --data)")
 			}
-			if tracking != "" {
+			if cmd.Flags().Changed("tracking") {
 				var v helo.SendBroadcastRequestTracking
-				if err := json.Unmarshal([]byte(tracking), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --tracking: %w", err)
+				if err := decodeJSONFlag("tracking", tracking, &v); err != nil {
+					return err
 				}
 				params.Tracking = &v
 			}
-			if attachments != "" {
+			if cmd.Flags().Changed("attachments") {
 				var v []helo.Attachment
-				if err := json.Unmarshal([]byte(attachments), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --attachments: %w", err)
+				if err := decodeJSONFlag("attachments", attachments, &v); err != nil {
+					return err
 				}
 				params.Attachments = v
 			}
-			params.Tags = tags
-			if headers != "" {
+			if cmd.Flags().Changed("tags") {
+				params.Tags = tags
+			}
+			if cmd.Flags().Changed("headers") {
 				var v map[string]any
-				if err := json.Unmarshal([]byte(headers), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --headers: %w", err)
+				if err := decodeJSONFlag("headers", headers, &v); err != nil {
+					return err
 				}
 				params.Headers = v
 			}
-			if metadata != "" {
+			if cmd.Flags().Changed("metadata") {
 				var v map[string]any
-				if err := json.Unmarshal([]byte(metadata), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --metadata: %w", err)
+				if err := decodeJSONFlag("metadata", metadata, &v); err != nil {
+					return err
 				}
 				params.Metadata = v
 			}
-			if messages != "" {
+			if cmd.Flags().Changed("messages") {
 				var v []helo.SendBroadcastRequestMessage
-				if err := json.Unmarshal([]byte(messages), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --messages: %w", err)
+				if err := decodeJSONFlag("messages", messages, &v); err != nil {
+					return err
 				}
 				params.Messages = v
 			}
-			if messages == "" {
-				return fmt.Errorf("--messages is required")
+			if !cmd.Flags().Changed("messages") && !dataFields["messages"] {
+				return usageErrorf("--messages is required (or set \"messages\" in --data)")
 			}
 
+			channelID = envDefault(channelID, channelIDEnv)
 			opts := &helo.SendingSendBroadcastOptions{
 				ChannelID:      channelID,
 				IdempotencyKey: idempotencyKey,
+			}
+			client, err := newClient()
+			if err != nil {
+				return err
 			}
 			result, err := client.Sending.SendBroadcast(cmd.Context(), params, opts)
 			if err != nil {
@@ -312,20 +340,18 @@ func newSendingSendBroadcastCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&from, "from", "", "from (JSON, required)")
-	_ = cmd.MarkFlagRequired("from")
-	cmd.Flags().StringVar(&replyTo, "reply-to", "", "replyTo (JSON)")
-	cmd.Flags().StringVar(&template, "template", "", "template (JSON, required)")
-	_ = cmd.MarkFlagRequired("template")
-	cmd.Flags().StringVar(&tracking, "tracking", "", "tracking (JSON)")
-	cmd.Flags().StringVar(&attachments, "attachments", "", "attachments (JSON)")
-	cmd.Flags().StringSliceVar(&tags, "tags", nil, "tags")
-	cmd.Flags().StringVar(&headers, "headers", "", "headers (JSON)")
-	cmd.Flags().StringVar(&metadata, "metadata", "", "metadata (JSON)")
-	cmd.Flags().StringVar(&messages, "messages", "", "messages (JSON, required)")
-	_ = cmd.MarkFlagRequired("messages")
-	cmd.Flags().StringVar(&channelID, "channel-id", "", "Used to specify a channel ID for sending when using an account-level API credential.")
-	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "A unique identifier used to prevent duplicate messages being sent when retrying failed requests.")
+	cmd.Flags().StringVar(&from, "from", "", "from (required; JSON: {\"email\": string, \"name\": string}; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&replyTo, "reply-to", "", "Reply-to addresses (JSON: [{\"email\": string, \"name\": string}]; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&template, "template", "", "Email template applied to every message in the broadcast. Either reference a stored template by 'id', or supply 'subject' and at least one of 'html' or 'text' inline (required; JSON: {\"id\": string, \"subject\": string, \"html\": string, \"text\": string, \"inlineStyles\": boolean, \"data\": object}; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&tracking, "tracking", "", "Override channel-level open and link tracking settings (JSON: {\"opens\": boolean, \"links\": boolean}; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&attachments, "attachments", "", "File attachments included with every message in the broadcast. Executable and potentially harmful file types are blocked (JSON: [{\"content\": base64 string, \"contentId\": string, \"contentType\": string, \"fileName\": string, \"disposition\": \"attachment\"|\"inline\"}]; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringSliceVar(&tags, "tags", nil, "Up to 5 tags for filtering and analytics. Allowed characters are letters, numbers, hyphens, and underscores. Max 100 characters per tag (comma-separated)")
+	cmd.Flags().StringVar(&headers, "headers", "", "Custom email headers applied to every message. Total size of all headers combined must not exceed 5,000 characters (JSON: {string: string}; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&metadata, "metadata", "", "Custom key/value metadata stored with the broadcast. Max 10 fields; keys max 50 characters, values max 100 characters (JSON: {string: string}; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&messages, "messages", "", "One entry per outbound email. At least one message is required (required; JSON: [{\"to\": [{\"email\": string, \"name\": string}], \"cc\": [{\"email\": string, \"name\": string}], \"bcc\": [{\"email\": string, \"name\": string}], \"tags\": [string], \"headers\": {string: string}, \"metadata\": {string: string}, \"data\": object}]; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&requestData, "data", "", "The whole request body as JSON (inline, @file, or @- for stdin); other flags override its fields")
+	cmd.Flags().StringVar(&channelID, "channel-id", "", "Used to specify a channel ID for sending when using an account-level API credential (default $HELO_CHANNEL_ID)")
+	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "A unique identifier used to prevent duplicate messages being sent when retrying failed requests (max length 36)")
 
 	return cmd
 }
@@ -347,101 +373,116 @@ func newSendingSendBroadcastMessageCmd() *cobra.Command {
 	var metadata string
 	var channelID string
 	var idempotencyKey string
+	var requestData string
 
 	cmd := &cobra.Command{
 		Use:   "send-broadcast-message",
 		Short: "Send a single broadcast email",
+		Long:  "Sends a single broadcast email message.\n\nSet the request body's fields with flags, or pass the whole body as JSON with --data (inline, @file, or @- for stdin); flags override fields from --data.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := newClient()
+
+			params := &helo.SendMessageRequest{}
+			dataFields, err := decodeBody(requestData, params)
 			if err != nil {
 				return err
 			}
-
-			params := &helo.SendMessageRequest{}
-			if from != "" {
+			if cmd.Flags().Changed("from") {
 				var v helo.MailAddress
-				if err := json.Unmarshal([]byte(from), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --from: %w", err)
+				if err := decodeJSONFlag("from", from, &v); err != nil {
+					return err
 				}
 				params.From = v
 			}
-			if from == "" {
-				return fmt.Errorf("--from is required")
+			if !cmd.Flags().Changed("from") && !dataFields["from"] {
+				return usageErrorf("--from is required (or set \"from\" in --data)")
 			}
-			if to != "" {
+			if cmd.Flags().Changed("to") {
 				var v []helo.MailAddress
-				if err := json.Unmarshal([]byte(to), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --to: %w", err)
+				if err := decodeJSONFlag("to", to, &v); err != nil {
+					return err
 				}
 				params.To = v
 			}
-			if to == "" {
-				return fmt.Errorf("--to is required")
+			if !cmd.Flags().Changed("to") && !dataFields["to"] {
+				return usageErrorf("--to is required (or set \"to\" in --data)")
 			}
-			if cc != "" {
+			if cmd.Flags().Changed("cc") {
 				var v []helo.MailAddress
-				if err := json.Unmarshal([]byte(cc), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --cc: %w", err)
+				if err := decodeJSONFlag("cc", cc, &v); err != nil {
+					return err
 				}
 				params.Cc = v
 			}
-			if bcc != "" {
+			if cmd.Flags().Changed("bcc") {
 				var v []helo.MailAddress
-				if err := json.Unmarshal([]byte(bcc), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --bcc: %w", err)
+				if err := decodeJSONFlag("bcc", bcc, &v); err != nil {
+					return err
 				}
 				params.Bcc = v
 			}
-			if replyTo != "" {
+			if cmd.Flags().Changed("reply-to") {
 				var v []helo.MailAddress
-				if err := json.Unmarshal([]byte(replyTo), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --reply-to: %w", err)
+				if err := decodeJSONFlag("reply-to", replyTo, &v); err != nil {
+					return err
 				}
 				params.ReplyTo = v
 			}
-			params.Subject = subject
-			params.Html = html
-			params.Text = text
-			if template != "" {
+			if cmd.Flags().Changed("subject") {
+				params.Subject = subject
+			}
+			if cmd.Flags().Changed("html") {
+				params.Html = html
+			}
+			if cmd.Flags().Changed("text") {
+				params.Text = text
+			}
+			if cmd.Flags().Changed("template") {
 				var v helo.SendMessageRequestTemplate
-				if err := json.Unmarshal([]byte(template), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --template: %w", err)
+				if err := decodeJSONFlag("template", template, &v); err != nil {
+					return err
 				}
 				params.Template = &v
 			}
-			if tracking != "" {
+			if cmd.Flags().Changed("tracking") {
 				var v helo.SendMessageRequestTracking
-				if err := json.Unmarshal([]byte(tracking), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --tracking: %w", err)
+				if err := decodeJSONFlag("tracking", tracking, &v); err != nil {
+					return err
 				}
 				params.Tracking = &v
 			}
-			if attachments != "" {
+			if cmd.Flags().Changed("attachments") {
 				var v []helo.Attachment
-				if err := json.Unmarshal([]byte(attachments), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --attachments: %w", err)
+				if err := decodeJSONFlag("attachments", attachments, &v); err != nil {
+					return err
 				}
 				params.Attachments = v
 			}
-			params.Tags = tags
-			if headers != "" {
+			if cmd.Flags().Changed("tags") {
+				params.Tags = tags
+			}
+			if cmd.Flags().Changed("headers") {
 				var v map[string]any
-				if err := json.Unmarshal([]byte(headers), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --headers: %w", err)
+				if err := decodeJSONFlag("headers", headers, &v); err != nil {
+					return err
 				}
 				params.Headers = v
 			}
-			if metadata != "" {
+			if cmd.Flags().Changed("metadata") {
 				var v map[string]any
-				if err := json.Unmarshal([]byte(metadata), &v); err != nil {
-					return fmt.Errorf("invalid JSON for --metadata: %w", err)
+				if err := decodeJSONFlag("metadata", metadata, &v); err != nil {
+					return err
 				}
 				params.Metadata = v
 			}
 
+			channelID = envDefault(channelID, channelIDEnv)
 			opts := &helo.SendingSendBroadcastMessageOptions{
 				ChannelID:      channelID,
 				IdempotencyKey: idempotencyKey,
+			}
+			client, err := newClient()
+			if err != nil {
+				return err
 			}
 			result, err := client.Sending.SendBroadcastMessage(cmd.Context(), params, opts)
 			if err != nil {
@@ -451,24 +492,23 @@ func newSendingSendBroadcastMessageCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&from, "from", "", "from (JSON, required)")
-	_ = cmd.MarkFlagRequired("from")
-	cmd.Flags().StringVar(&to, "to", "", "to (JSON, required)")
-	_ = cmd.MarkFlagRequired("to")
-	cmd.Flags().StringVar(&cc, "cc", "", "cc (JSON)")
-	cmd.Flags().StringVar(&bcc, "bcc", "", "bcc (JSON)")
-	cmd.Flags().StringVar(&replyTo, "reply-to", "", "replyTo (JSON)")
+	cmd.Flags().StringVar(&from, "from", "", "from (required; JSON: {\"email\": string, \"name\": string}; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&to, "to", "", "to (required; JSON: [{\"email\": string, \"name\": string}]; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&cc, "cc", "", "cc (JSON: [{\"email\": string, \"name\": string}]; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&bcc, "bcc", "", "bcc (JSON: [{\"email\": string, \"name\": string}]; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&replyTo, "reply-to", "", "replyTo (JSON: [{\"email\": string, \"name\": string}]; @file or @- reads it from a file or stdin)")
 	cmd.Flags().StringVar(&subject, "subject", "", "subject")
 	cmd.Flags().StringVar(&html, "html", "", "html")
 	cmd.Flags().StringVar(&text, "text", "", "text")
-	cmd.Flags().StringVar(&template, "template", "", "template (JSON)")
-	cmd.Flags().StringVar(&tracking, "tracking", "", "tracking (JSON)")
-	cmd.Flags().StringVar(&attachments, "attachments", "", "attachments (JSON)")
-	cmd.Flags().StringSliceVar(&tags, "tags", nil, "tags")
-	cmd.Flags().StringVar(&headers, "headers", "", "headers (JSON)")
-	cmd.Flags().StringVar(&metadata, "metadata", "", "metadata (JSON)")
-	cmd.Flags().StringVar(&channelID, "channel-id", "", "Used to specify a channel ID for sending when using an account-level API credential.")
-	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "A unique identifier used to prevent duplicate messages being sent when retrying failed requests.")
+	cmd.Flags().StringVar(&template, "template", "", "Either reference a stored template by 'id', or supply 'subject' and at least one of 'html' or 'text' inline (JSON: {\"id\": string, \"subject\": string, \"html\": string, \"text\": string, \"inlineStyles\": boolean, \"data\": object}; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&tracking, "tracking", "", "tracking (JSON: {\"opens\": boolean, \"links\": boolean}; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&attachments, "attachments", "", "attachments (JSON: [{\"content\": base64 string, \"contentId\": string, \"contentType\": string, \"fileName\": string, \"disposition\": \"attachment\"|\"inline\"}]; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringSliceVar(&tags, "tags", nil, "tags (comma-separated)")
+	cmd.Flags().StringVar(&headers, "headers", "", "headers (JSON: {string: string}; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&metadata, "metadata", "", "metadata (JSON: {string: string}; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&requestData, "data", "", "The whole request body as JSON (inline, @file, or @- for stdin); other flags override its fields")
+	cmd.Flags().StringVar(&channelID, "channel-id", "", "Used to specify a channel ID for sending when using an account-level API credential (default $HELO_CHANNEL_ID)")
+	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "A unique identifier used to prevent duplicate messages being sent when retrying failed requests (max length 36)")
 
 	return cmd
 }

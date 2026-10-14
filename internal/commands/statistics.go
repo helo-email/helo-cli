@@ -27,30 +27,31 @@ func newStatisticsRetrieveHourlyCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "retrieve-hourly",
 		Short: "Retrieve hourly statistics",
+		Long:  "Fetches hourly aggregated statistics.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := newClient()
-			if err != nil {
-				return err
-			}
 
 			params := &helo.StatisticsRetrieveHourlyParams{}
 			params.ChannelID = channelID
 			if from != "" {
 				t, err := parseTimeFlag("from", from)
 				if err != nil {
-					return err
+					return usageError(err)
 				}
 				params.From = t
 			}
 			if to != "" {
 				t, err := parseTimeFlag("to", to)
 				if err != nil {
-					return err
+					return usageError(err)
 				}
 				params.To = t
 			}
 			params.Tags = tags
 
+			client, err := newClient()
+			if err != nil {
+				return err
+			}
 			result, err := client.Statistics.RetrieveHourly(cmd.Context(), params)
 			if err != nil {
 				return err
@@ -60,11 +61,11 @@ func newStatisticsRetrieveHourlyCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&channelID, "channel-id", "", "channelId")
-	cmd.Flags().StringVar(&from, "from", "", "from (required, RFC 3339 or a duration ago, e.g. 24h)")
+	cmd.Flags().StringVar(&from, "from", "", "from (required; RFC 3339 or a duration ago, e.g. 24h)")
 	_ = cmd.MarkFlagRequired("from")
-	cmd.Flags().StringVar(&to, "to", "", "to (required, RFC 3339 or a duration ago, e.g. 24h)")
+	cmd.Flags().StringVar(&to, "to", "", "to (required; RFC 3339 or a duration ago, e.g. 24h)")
 	_ = cmd.MarkFlagRequired("to")
-	cmd.Flags().StringSliceVar(&tags, "tags", nil, "tags")
+	cmd.Flags().StringSliceVar(&tags, "tags", nil, "tags (comma-separated)")
 
 	return cmd
 }
@@ -79,22 +80,19 @@ func newStatisticsRetrieveDailyCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "retrieve-daily",
 		Short: "Retrieve daily statistics",
+		Long:  "Fetches daily aggregated statistics.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := newClient()
-			if err != nil {
-				return err
-			}
 			if from != "" {
 				d, err := parseDateFlag("from", from)
 				if err != nil {
-					return err
+					return usageError(err)
 				}
 				from = d
 			}
 			if to != "" {
 				d, err := parseDateFlag("to", to)
 				if err != nil {
-					return err
+					return usageError(err)
 				}
 				to = d
 			}
@@ -106,6 +104,10 @@ func newStatisticsRetrieveDailyCmd() *cobra.Command {
 			params.Tags = tags
 			params.Timezone = timezone
 
+			client, err := newClient()
+			if err != nil {
+				return err
+			}
 			result, err := client.Statistics.RetrieveDaily(cmd.Context(), params)
 			if err != nil {
 				return err
@@ -115,11 +117,11 @@ func newStatisticsRetrieveDailyCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&channelID, "channel-id", "", "channelId")
-	cmd.Flags().StringVar(&from, "from", "", "from (required, YYYY-MM-DD or a duration ago, e.g. 7d)")
+	cmd.Flags().StringVar(&from, "from", "", "from (required; YYYY-MM-DD or a duration ago, e.g. 7d)")
 	_ = cmd.MarkFlagRequired("from")
-	cmd.Flags().StringVar(&to, "to", "", "to (required, YYYY-MM-DD or a duration ago, e.g. 7d)")
+	cmd.Flags().StringVar(&to, "to", "", "to (required; YYYY-MM-DD or a duration ago, e.g. 7d)")
 	_ = cmd.MarkFlagRequired("to")
-	cmd.Flags().StringSliceVar(&tags, "tags", nil, "tags")
+	cmd.Flags().StringSliceVar(&tags, "tags", nil, "tags (comma-separated)")
 	cmd.Flags().StringVar(&timezone, "timezone", "", "timezone (required)")
 	_ = cmd.MarkFlagRequired("timezone")
 
@@ -135,30 +137,31 @@ func newStatisticsRetrieveTotalsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "retrieve-totals",
 		Short: "Retrieve all time statistics",
+		Long:  "Fetches cumulative statistics.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := newClient()
-			if err != nil {
-				return err
-			}
 
 			params := &helo.StatisticsRetrieveTotalsParams{}
 			params.ChannelID = channelID
 			if from != "" {
 				t, err := parseTimeFlag("from", from)
 				if err != nil {
-					return err
+					return usageError(err)
 				}
 				params.From = t
 			}
 			if to != "" {
 				t, err := parseTimeFlag("to", to)
 				if err != nil {
-					return err
+					return usageError(err)
 				}
 				params.To = t
 			}
 			params.Tags = tags
 
+			client, err := newClient()
+			if err != nil {
+				return err
+			}
 			result, err := client.Statistics.RetrieveTotals(cmd.Context(), params)
 			if err != nil {
 				return err
@@ -168,11 +171,11 @@ func newStatisticsRetrieveTotalsCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&channelID, "channel-id", "", "channelId")
-	cmd.Flags().StringVar(&from, "from", "", "from (required, RFC 3339 or a duration ago, e.g. 24h)")
+	cmd.Flags().StringVar(&from, "from", "", "from (required; RFC 3339 or a duration ago, e.g. 24h)")
 	_ = cmd.MarkFlagRequired("from")
-	cmd.Flags().StringVar(&to, "to", "", "to (required, RFC 3339 or a duration ago, e.g. 24h)")
+	cmd.Flags().StringVar(&to, "to", "", "to (required; RFC 3339 or a duration ago, e.g. 24h)")
 	_ = cmd.MarkFlagRequired("to")
-	cmd.Flags().StringSliceVar(&tags, "tags", nil, "tags")
+	cmd.Flags().StringSliceVar(&tags, "tags", nil, "tags (comma-separated)")
 
 	return cmd
 }

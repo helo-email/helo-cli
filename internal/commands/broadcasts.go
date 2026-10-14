@@ -3,7 +3,6 @@ package commands
 import (
 	"github.com/spf13/cobra"
 
-	"fmt"
 	"github.com/helo-email/helo-sdk-go"
 )
 
@@ -32,16 +31,13 @@ func newBroadcastsListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List broadcasts",
+		Long:  "Retrieves a paginated list of sent broadcasts with summary statistics.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := newClient()
-			if err != nil {
-				return err
-			}
 			if status != "" {
 				switch status {
 				case "accepted", "processing", "completed", "canceled":
 				default:
-					return fmt.Errorf("invalid value %q for --status: must be one of accepted|processing|completed|canceled", status)
+					return usageErrorf("invalid value %q for --status: must be one of accepted|processing|completed|canceled", status)
 				}
 			}
 
@@ -52,20 +48,24 @@ func newBroadcastsListCmd() *cobra.Command {
 			if from != "" {
 				t, err := parseTimeFlag("from", from)
 				if err != nil {
-					return err
+					return usageError(err)
 				}
 				params.From = t
 			}
 			if to != "" {
 				t, err := parseTimeFlag("to", to)
 				if err != nil {
-					return err
+					return usageError(err)
 				}
 				params.To = t
 			}
 			params.Limit = limit
 			params.Offset = offset
 
+			client, err := newClient()
+			if err != nil {
+				return err
+			}
 			result, err := client.Broadcasts.List(cmd.Context(), params)
 			if err != nil {
 				return err
@@ -76,15 +76,15 @@ func newBroadcastsListCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&channelID, "channel-id", "", "channelId (required)")
 	_ = cmd.MarkFlagRequired("channel-id")
-	cmd.Flags().StringVar(&status, "status", "", "status (one of: accepted|processing|completed|canceled)")
+	cmd.Flags().StringVar(&status, "status", "", "Current processing state of a broadcast. 'accepted' — queued, waiting for the channel to become available. 'processing' — actively sending messages. 'completed' — all messages have been processed. 'canceled' — stopped before completing (one of: accepted|processing|completed|canceled)")
 	_ = cmd.RegisterFlagCompletionFunc("status", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return []string{"accepted", "processing", "completed", "canceled"}, cobra.ShellCompDirectiveNoFileComp
 	})
 	cmd.Flags().StringVar(&subject, "subject", "", "subject")
 	cmd.Flags().StringVar(&from, "from", "", "from (RFC 3339 or a duration ago, e.g. 24h)")
 	cmd.Flags().StringVar(&to, "to", "", "to (RFC 3339 or a duration ago, e.g. 24h)")
-	cmd.Flags().IntVar(&limit, "limit", 0, "limit")
-	cmd.Flags().IntVar(&offset, "offset", 0, "offset")
+	cmd.Flags().IntVar(&limit, "limit", 0, "limit (min 1; max 500)")
+	cmd.Flags().IntVar(&offset, "offset", 0, "offset (min 0)")
 
 	return cmd
 }
@@ -94,14 +94,15 @@ func newBroadcastsRetrieveCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "retrieve <id>",
 		Short: "Retrieve a broadcast",
+		Long:  "Fetches details and statistics for a specific broadcast.",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			id := args[0]
+
 			client, err := newClient()
 			if err != nil {
 				return err
 			}
-			id := args[0]
-
 			result, err := client.Broadcasts.Retrieve(cmd.Context(), id)
 			if err != nil {
 				return err
@@ -120,18 +121,19 @@ func newBroadcastsListFailuresCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list-failures <id>",
 		Short: "List failed broadcast messages",
+		Long:  "Returns messages that could not be delivered due to permanent errors (e.g. invalid addresses, domain issues). Transient errors that were retried successfully do not appear here.",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := newClient()
-			if err != nil {
-				return err
-			}
 			id := args[0]
 
 			params := &helo.BroadcastsListFailuresParams{}
 			params.Limit = limit
 			params.Offset = offset
 
+			client, err := newClient()
+			if err != nil {
+				return err
+			}
 			result, err := client.Broadcasts.ListFailures(cmd.Context(), id, params)
 			if err != nil {
 				return err
@@ -140,8 +142,8 @@ func newBroadcastsListFailuresCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&limit, "limit", 0, "limit")
-	cmd.Flags().IntVar(&offset, "offset", 0, "offset")
+	cmd.Flags().IntVar(&limit, "limit", 0, "limit (min 1; max 500)")
+	cmd.Flags().IntVar(&offset, "offset", 0, "offset (min 0)")
 
 	return cmd
 }
@@ -153,18 +155,19 @@ func newBroadcastsListSuppressionsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list-suppressions <id>",
 		Short: "List broadcast suppressed recipients",
+		Long:  "Returns recipients that were skipped because they appear on a suppression list (e.g. previous bounces or unsubscribes).",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := newClient()
-			if err != nil {
-				return err
-			}
 			id := args[0]
 
 			params := &helo.BroadcastsListSuppressionsParams{}
 			params.Limit = limit
 			params.Offset = offset
 
+			client, err := newClient()
+			if err != nil {
+				return err
+			}
 			result, err := client.Broadcasts.ListSuppressions(cmd.Context(), id, params)
 			if err != nil {
 				return err
@@ -173,8 +176,8 @@ func newBroadcastsListSuppressionsCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&limit, "limit", 0, "limit")
-	cmd.Flags().IntVar(&offset, "offset", 0, "offset")
+	cmd.Flags().IntVar(&limit, "limit", 0, "limit (min 1; max 500)")
+	cmd.Flags().IntVar(&offset, "offset", 0, "offset (min 0)")
 
 	return cmd
 }

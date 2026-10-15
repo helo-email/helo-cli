@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.2
+
+- `helo` can now be installed with Homebrew (`brew install helo-email/tap/helo`) or with an install script
+  (`curl -fsSL https://raw.githubusercontent.com/helo-email/helo-cli/main/install.sh | sh`), which verifies
+  the download against the release's `checksums.txt`. Both avoid macOS's Gatekeeper warning for
+  browser-downloaded binaries.
+
 ## 0.1.1
 
 - Releases now include prebuilt binaries for macOS, Linux and Windows on amd64 and arm64, with a

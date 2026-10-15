@@ -4,24 +4,34 @@ CLI for Helo API. Wraps the [helo](https://github.com/helo-email/helo-sdk-go) Go
 
 ## Install
 
-Download a prebuilt binary from the [latest release](https://github.com/helo-email/helo-cli/releases/latest), for macOS, Linux or
-Windows on amd64 or arm64. On macOS or Linux:
+With [Homebrew](https://brew.sh), on macOS or Linux:
 
 ```bash
-os=$(uname -s | tr '[:upper:]' '[:lower:]')
-arch=$(uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')
-curl -fsSL "https://github.com/helo-email/helo-cli/releases/latest/download/helo_${os}_${arch}.tar.gz" \
-  | tar -xz -C ~/.local/bin helo
+brew install helo-email/tap/helo
 ```
 
-That installs into `~/.local/bin`, which must exist and be on your `PATH`; use another directory if you
-prefer. Each release also has a `checksums.txt` of SHA-256 sums. Or, with Go installed:
+Or with the install script, which downloads the binary for your platform from the
+[latest release](https://github.com/helo-email/helo-cli/releases/latest), checks it against the release's `checksums.txt` and puts it
+in `~/.local/bin`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/helo-email/helo-cli/main/install.sh | sh
+```
+
+Set `HELO_INSTALL_DIR` to install somewhere else, or `HELO_INSTALL_VERSION` (e.g. `0.1.2`) for an
+older release. On Windows, download the `.zip` for your architecture from the release.
+
+On macOS, install it one of these ways rather than downloading the archive in a browser. The binary isn't
+notarized by Apple, so Gatekeeper blocks a browser download until you run
+`xattr -d com.apple.quarantine helo`.
+
+Or, with Go installed:
 
 ```bash
 go install github.com/helo-email/helo-cli/cmd/helo@latest
 ```
 
-`@latest` is the newest release; pin one with `@v0.1.1`, say. `helo --version` reports the
+`@latest` is the newest release; pin one with `@v0.1.2`, say. `helo --version` reports the
 release and the SDK version it was built with. Each release's notes are in [CHANGELOG.md](CHANGELOG.md) and on
 the repository's GitHub releases.
 

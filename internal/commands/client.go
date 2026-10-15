@@ -116,22 +116,23 @@ func Flags() GlobalFlags {
 // HELO_API_KEY is the name the API documentation uses.
 var tokenEnvVars = []string{"HELO_API_KEY", "HELO_TOKEN"}
 
+// Environment variables the base URL is read from, in order, after --base-url.
+var baseURLEnvVars = []string{"HELO_BASE_URL", "HELO_API_URL"}
+
 // newClient builds an SDK client from the current flags + environment.
 func newClient() (*helo.Helo, error) {
 	f := Flags()
 
 	token := f.Token
-	for _, name := range tokenEnvVars {
-		if token != "" {
-			break
-		}
-		token = os.Getenv(name)
+	if token == "" {
+		token = setting(tokenEnvVars...)
 	}
 	if token == "" && f.DryRun {
 		token = "dry-run" // never sent, and redacted from the printed request
 	}
 	if token == "" {
-		return nil, &output.CredentialsError{Message: "no API key: pass --token or set $" + strings.Join(tokenEnvVars, " or $")}
+		return nil, &output.CredentialsError{Message: "no API key: pass --token, set $" + strings.Join(tokenEnvVars, " or $") +
+			", or put " + tokenEnvVars[0] + "=<key> in " + credentialsPath()}
 	}
 
 	opts := []helo.HeloOption{
@@ -139,7 +140,7 @@ func newClient() (*helo.Helo, error) {
 	}
 	baseURL := f.BaseURL
 	if baseURL == "" {
-		baseURL = os.Getenv("HELO_BASE_URL")
+		baseURL = setting(baseURLEnvVars...)
 	}
 	if baseURL != "" {
 		opts = append(opts, helo.WithBaseURL(baseURL))

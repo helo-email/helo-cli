@@ -40,6 +40,8 @@ const longHelp = "Helo Email API (https://helohq.com)" + `
 Authentication:
   Pass an API key with --token, or set $HELO_API_KEY ($HELO_TOKEN also works).
   Commands that send through a channel use --channel-id, else $HELO_CHANNEL_ID.
+  Variables not in the environment are read from ~/.config/helo/credentials, a
+  file of HELO_API_KEY=... lines ($HELO_CREDENTIALS_FILE moves it).
 
 Input:
   Commands that take a request body accept the whole body as JSON with --data,
@@ -91,7 +93,7 @@ func NewRootCmd() *cobra.Command {
 	})
 
 	cmd.PersistentFlags().StringVar(&flags.Token, "token", "", "API key (overrides $HELO_API_KEY and $HELO_TOKEN)")
-	cmd.PersistentFlags().StringVar(&flags.BaseURL, "base-url", "", "API base URL override (default $HELO_BASE_URL)")
+	cmd.PersistentFlags().StringVar(&flags.BaseURL, "base-url", "", "API base URL override (default $HELO_BASE_URL or $HELO_API_URL)")
 	cmd.PersistentFlags().BoolVar(&flags.JSON, "json", false, "Report errors as JSON (the default when stderr isn't a terminal)")
 	cmd.PersistentFlags().BoolVar(&flags.Quiet, "quiet", false, "Output data only, no envelope")
 	cmd.PersistentFlags().BoolVar(&flags.DryRun, "dry-run", false, "Print the request instead of sending it")

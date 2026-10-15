@@ -97,12 +97,13 @@ func decodeBody(value string, v any) (bodyFields, error) {
 	return fields, nil
 }
 
-// envDefault returns value, or the environment variable name when value is empty.
+// envDefault returns value, or when that is empty the setting name, from the
+// environment or the credentials file.
 func envDefault(value, name string) string {
 	if value != "" {
 		return value
 	}
-	return os.Getenv(name)
+	return setting(name)
 }
 
 func usageErrorf(format string, args ...any) error {

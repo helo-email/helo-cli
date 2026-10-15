@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0
+
+- Settings that aren't in the environment (`HELO_API_KEY`, `HELO_TOKEN`, `HELO_CHANNEL_ID`, `HELO_BASE_URL`) are
+  now read from `~/.config/helo/credentials`, a file of `KEY=value` lines (`$HELO_CREDENTIALS_FILE` moves it).
+  That suits shells that don't load your profile, such as a coding agent's, and keeps the API key off the
+  command line. `HELO_API_URL` is also accepted for the base URL.
+
 ## 0.1.2
 
 - `helo` can now be installed with Homebrew (`brew install helo-email/tap/helo`) or with an install script

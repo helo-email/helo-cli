@@ -27,7 +27,7 @@ jobs:
       tag: ${{ steps.version.outputs.tag }}
       unreleased: ${{ steps.version.outputs.unreleased }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Read version
         id: version
@@ -57,7 +57,7 @@ jobs:
     if: needs.check.outputs.unreleased == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # The newest Go, for its security fixes: go.mod's go line is only the
       # oldest version the module builds with.
@@ -106,7 +106,7 @@ jobs:
     permissions:
       contents: write # tag and GitHub release
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/download-artifact@v8
         with:

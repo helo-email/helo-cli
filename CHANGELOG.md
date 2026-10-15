@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+
+- Fixed array query parameters whose items are an enum, such as `eventTypes` on `Activity.ListEvents`
+  (`helo activity list-events --event-types`): they were sent as `[bounced complained]` instead of
+  `bounced,complained`.
+
 ## 0.2.0
 
 - Settings that aren't in the environment (`HELO_API_KEY`, `HELO_TOKEN`, `HELO_CHANNEL_ID`, `HELO_BASE_URL`) are

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1
+
+- Fixed every command panicking at startup with `render-draft flag redefined: data`. The template
+  variables of `templates render` and `templates render-draft` are now given as `--template-data`.
+
 ## 0.3.0
 
 - Added sending template management

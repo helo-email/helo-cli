@@ -166,9 +166,9 @@ func newTemplatesRenderDraftCmd() *cobra.Command {
 			if cmd.Flags().Changed("inline-styles") {
 				params.InlineStyles = &inlineStyles
 			}
-			if cmd.Flags().Changed("data") {
+			if cmd.Flags().Changed("template-data") {
 				var v map[string]any
-				if err := decodeJSONFlag("data", data, &v); err != nil {
+				if err := decodeJSONFlag("template-data", data, &v); err != nil {
 					return err
 				}
 				params.Data = v
@@ -191,7 +191,7 @@ func newTemplatesRenderDraftCmd() *cobra.Command {
 	cmd.Flags().StringVar(&mjml, "mjml", "", "mjml")
 	cmd.Flags().StringVar(&text, "text", "", "text")
 	cmd.Flags().BoolVar(&inlineStyles, "inline-styles", false, "Inline CSS into the HTML, as a send does. Defaults to true, so the preview matches what recipients receive")
-	cmd.Flags().StringVar(&data, "data", "", "Sample data used to interpolate Liquid variables (JSON: object; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&data, "template-data", "", "Sample data used to interpolate Liquid variables (JSON: object; @file or @- reads it from a file or stdin)")
 	cmd.Flags().StringVar(&requestData, "data", "", "The whole request body as JSON (inline, @file, or @- for stdin); other flags override its fields")
 
 	return cmd
@@ -368,9 +368,9 @@ func newTemplatesRenderCmd() *cobra.Command {
 			if cmd.Flags().Changed("inline-styles") {
 				params.InlineStyles = &inlineStyles
 			}
-			if cmd.Flags().Changed("data") {
+			if cmd.Flags().Changed("template-data") {
 				var v map[string]any
-				if err := decodeJSONFlag("data", data, &v); err != nil {
+				if err := decodeJSONFlag("template-data", data, &v); err != nil {
 					return err
 				}
 				params.Data = v
@@ -389,7 +389,7 @@ func newTemplatesRenderCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&inlineStyles, "inline-styles", false, "Inline CSS into the HTML, as a send does. Defaults to true, so the preview matches what recipients receive")
-	cmd.Flags().StringVar(&data, "data", "", "Sample data used to interpolate Liquid variables (JSON: object; @file or @- reads it from a file or stdin)")
+	cmd.Flags().StringVar(&data, "template-data", "", "Sample data used to interpolate Liquid variables (JSON: object; @file or @- reads it from a file or stdin)")
 	cmd.Flags().StringVar(&requestData, "data", "", "The whole request body as JSON (inline, @file, or @- for stdin); other flags override its fields")
 
 	return cmd

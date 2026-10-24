@@ -63,6 +63,7 @@ func newDomainsListCmd() *cobra.Command {
 func newDomainsCreateCmd() *cobra.Command {
 	var name string
 	var channelIds []string
+	var enableCustomTracking bool
 	var requestData string
 
 	cmd := &cobra.Command{
@@ -85,6 +86,9 @@ func newDomainsCreateCmd() *cobra.Command {
 			if cmd.Flags().Changed("channel-ids") {
 				params.ChannelIds = channelIds
 			}
+			if cmd.Flags().Changed("enable-custom-tracking") {
+				params.EnableCustomTracking = &enableCustomTracking
+			}
 
 			client, err := newClient()
 			if err != nil {
@@ -100,6 +104,7 @@ func newDomainsCreateCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&name, "name", "", "name (required)")
 	cmd.Flags().StringSliceVar(&channelIds, "channel-ids", nil, "channelIds (comma-separated)")
+	cmd.Flags().BoolVar(&enableCustomTracking, "enable-custom-tracking", false, "Enable a custom tracking domain. When enabled, a tracking DNS record is added to the domain, and the tracking domain is used once that record is verified. Defaults to false")
 	cmd.Flags().StringVar(&requestData, "data", "", "The whole request body as JSON (inline, @file, or @- for stdin); other flags override its fields")
 
 	return cmd
@@ -132,6 +137,7 @@ func newDomainsRetrieveCmd() *cobra.Command {
 
 func newDomainsUpdateCmd() *cobra.Command {
 	var channelIds []string
+	var enableCustomTracking bool
 	var requestData string
 
 	cmd := &cobra.Command{
@@ -149,6 +155,9 @@ func newDomainsUpdateCmd() *cobra.Command {
 			if cmd.Flags().Changed("channel-ids") {
 				params.ChannelIds = channelIds
 			}
+			if cmd.Flags().Changed("enable-custom-tracking") {
+				params.EnableCustomTracking = &enableCustomTracking
+			}
 
 			client, err := newClient()
 			if err != nil {
@@ -163,6 +172,7 @@ func newDomainsUpdateCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringSliceVar(&channelIds, "channel-ids", nil, "channelIds (comma-separated)")
+	cmd.Flags().BoolVar(&enableCustomTracking, "enable-custom-tracking", false, "Enable or disable a custom tracking domain. When enabled, a tracking DNS record is added to the domain, and the tracking domain is used once that record is verified. When disabled, the tracking DNS record is removed. Custom tracking cannot be disabled once the tracking domain is in use, as links in sent emails depend on it")
 	cmd.Flags().StringVar(&requestData, "data", "", "The whole request body as JSON (inline, @file, or @- for stdin); other flags override its fields")
 
 	return cmd

@@ -18,7 +18,7 @@ in `~/.local/bin`:
 curl -fsSL https://raw.githubusercontent.com/helo-email/helo-cli/main/install.sh | sh
 ```
 
-Set `HELO_INSTALL_DIR` to install somewhere else, or `HELO_INSTALL_VERSION` (e.g. `0.2.1`) for an
+Set `HELO_INSTALL_DIR` to install somewhere else, or `HELO_INSTALL_VERSION` (e.g. `0.3.0`) for an
 older release. On Windows, download the `.zip` for your architecture from the release.
 
 On macOS, install it one of these ways rather than downloading the archive in a browser. The binary isn't
@@ -31,7 +31,7 @@ Or, with Go installed:
 go install github.com/helo-email/helo-cli/cmd/helo@latest
 ```
 
-`@latest` is the newest release; pin one with `@v0.2.1`, say. `helo --version` reports the
+`@latest` is the newest release; pin one with `@v0.3.0`, say. `helo --version` reports the
 release and the SDK version it was built with. Each release's notes are in [CHANGELOG.md](CHANGELOG.md) and on
 the repository's GitHub releases.
 
@@ -155,4 +155,5 @@ terminal. The JSON carries the API's problem details when there are any:
 - `helo broadcasts` — Manage and track broadcast email campaigns.
 - `helo statistics` — Access activity statistics.
 - `helo suppressions` — Manage Suppressions
+- `helo templates` — Manage templates for sending.
 - `helo webhooks` — Create and manage webhooks for event notifications.

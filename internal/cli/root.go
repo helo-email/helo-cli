@@ -106,6 +106,7 @@ func NewRootCmd() *cobra.Command {
 		commands.NewBroadcastsCmd(),
 		commands.NewStatisticsCmd(),
 		commands.NewSuppressionsCmd(),
+		commands.NewTemplatesCmd(),
 		commands.NewWebhooksCmd(),
 	)
 

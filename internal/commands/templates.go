@@ -30,8 +30,8 @@ func newTemplatesListCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List operation",
-		Long:  "Fetch a paginated list of templates.",
+		Short: "List all templates",
+		Long:  "Retrieves a paginated list of templates, optionally filtered by name or channel.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			params := &helo.TemplatesListParams{}
@@ -71,8 +71,8 @@ func newTemplatesCreateCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "create",
-		Short: "Create operation",
-		Long:  "Create a new template.\n\nSet the request body's fields with flags, or pass the whole body as JSON with --data (inline, @file, or @- for stdin); flags override fields from --data.",
+		Short: "Create a template",
+		Long:  "Creates a new template from HTML, MJML, or plain-text content. MJML is compiled to HTML when the template is saved.\n\nSet the request body's fields with flags, or pass the whole body as JSON with --data (inline, @file, or @- for stdin); flags override fields from --data.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			params := &helo.CreateTemplateRequest{}
@@ -117,11 +117,11 @@ func newTemplatesCreateCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&name, "name", "", "name (required)")
-	cmd.Flags().StringVar(&subject, "subject", "", "subject (required)")
-	cmd.Flags().StringVar(&html, "html", "", "html")
-	cmd.Flags().StringVar(&mjml, "mjml", "", "mjml")
-	cmd.Flags().StringVar(&text, "text", "", "text")
+	cmd.Flags().StringVar(&name, "name", "", "Maximum 64 characters (required)")
+	cmd.Flags().StringVar(&subject, "subject", "", "Maximum 256 characters (required)")
+	cmd.Flags().StringVar(&html, "html", "", "Maximum 500,000 characters")
+	cmd.Flags().StringVar(&mjml, "mjml", "", "Maximum 500,000 characters. The html it compiles to must also be within the html limit")
+	cmd.Flags().StringVar(&text, "text", "", "Maximum 100,000 characters")
 	cmd.Flags().StringSliceVar(&channelIds, "channel-ids", nil, "channelIds (comma-separated)")
 	cmd.Flags().StringVar(&requestData, "data", "", "The whole request body as JSON (inline, @file, or @- for stdin); other flags override its fields")
 
@@ -139,8 +139,8 @@ func newTemplatesRenderDraftCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "render-draft",
-		Short: "RenderDraft operation",
-		Long:  "Render ad-hoc template content (Subject/Html/Text) with sample data, without persisting anything.\n\nSet the request body's fields with flags, or pass the whole body as JSON with --data (inline, @file, or @- for stdin); flags override fields from --data.",
+		Short: "Render template content",
+		Long:  "Renders unsaved template content (subject, HTML or MJML, and text) with sample data, without persisting anything.\n\nSet the request body's fields with flags, or pass the whole body as JSON with --data (inline, @file, or @- for stdin); flags override fields from --data.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			params := &helo.RenderDraftRequest{}
@@ -186,10 +186,10 @@ func newTemplatesRenderDraftCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&subject, "subject", "", "subject (required)")
-	cmd.Flags().StringVar(&html, "html", "", "html")
-	cmd.Flags().StringVar(&mjml, "mjml", "", "mjml")
-	cmd.Flags().StringVar(&text, "text", "", "text")
+	cmd.Flags().StringVar(&subject, "subject", "", "Maximum 256 characters (required)")
+	cmd.Flags().StringVar(&html, "html", "", "Maximum 500,000 characters")
+	cmd.Flags().StringVar(&mjml, "mjml", "", "Maximum 500,000 characters. The html it compiles to must also be within the html limit")
+	cmd.Flags().StringVar(&text, "text", "", "Maximum 100,000 characters")
 	cmd.Flags().BoolVar(&inlineStyles, "inline-styles", false, "Inline CSS into the HTML, as a send does. Defaults to true, so the preview matches what recipients receive")
 	cmd.Flags().StringVar(&data, "template-data", "", "Sample data used to interpolate Liquid variables (JSON: object; @file or @- reads it from a file or stdin)")
 	cmd.Flags().StringVar(&requestData, "data", "", "The whole request body as JSON (inline, @file, or @- for stdin); other flags override its fields")
@@ -201,8 +201,8 @@ func newTemplatesRetrieveCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "retrieve <id>",
-		Short: "Retrieve operation",
-		Long:  "Fetch a single template.",
+		Short: "Retrieve a template",
+		Long:  "Fetches the details and content of a specific template.",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id := args[0]
@@ -238,8 +238,8 @@ func newTemplatesUpdateCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "update <id>",
-		Short: "Update operation",
-		Long:  "Update an existing template.\n\nSet the request body's fields with flags, or pass the whole body as JSON with --data (inline, @file, or @- for stdin); flags override fields from --data.",
+		Short: "Update a template",
+		Long:  "Modifies an existing template. Only the provided fields are changed.\n\nSet the request body's fields with flags, or pass the whole body as JSON with --data (inline, @file, or @- for stdin); flags override fields from --data.",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id := args[0]
@@ -308,11 +308,11 @@ func newTemplatesUpdateCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&name, "name", "", "Renames the template. Cannot be cleared")
-	cmd.Flags().StringVar(&subject, "subject", "", "Cannot be cleared")
-	cmd.Flags().StringVar(&html, "html", "", "Replaces the html, and clears any stored mjml (switching the template back to plain HTML authoring). Set to null to remove the html - blank values are rejected (--clear-html sends null)")
-	cmd.Flags().StringVar(&mjml, "mjml", "", "Replaces the mjml source, recompiling the html from it. Set to null to remove the mjml source while keeping the html already compiled from it - blank values are rejected (--clear-mjml sends null)")
-	cmd.Flags().StringVar(&text, "text", "", "Replaces the plain text content. Set to null to remove it - blank values are rejected (--clear-text sends null)")
+	cmd.Flags().StringVar(&name, "name", "", "Renames the template. Cannot be cleared. Maximum 64 characters")
+	cmd.Flags().StringVar(&subject, "subject", "", "Cannot be cleared. Maximum 256 characters")
+	cmd.Flags().StringVar(&html, "html", "", "Replaces the html, and clears any stored mjml (switching the template back to plain HTML authoring). Set to null to remove the html - blank values are rejected. Maximum 500,000 characters (--clear-html sends null)")
+	cmd.Flags().StringVar(&mjml, "mjml", "", "Replaces the mjml source, recompiling the html from it. Set to null to remove the mjml source while keeping the html already compiled from it - blank values are rejected. Maximum 500,000 characters, and the compiled html must also be within the html limit (--clear-mjml sends null)")
+	cmd.Flags().StringVar(&text, "text", "", "Replaces the plain text content. Set to null to remove it - blank values are rejected. Maximum 100,000 characters (--clear-text sends null)")
 	cmd.Flags().StringSliceVar(&channelIds, "channel-ids", nil, "Replaces the channels the template is scoped to. Set to null or an empty array to remove channel scoping, making the template available to every channel in the account (comma-separated; --clear-channel-ids sends null)")
 	cmd.Flags().Int64Var(&version, "version", 0, "The version of the template the update was based on, as returned by a previous read. If the template has since been modified the update is rejected with 409 Conflict, so concurrent edits aren't silently overwritten")
 	cmd.Flags().BoolVar(&clearHtml, "clear-html", false, "Clear html by sending it as null")
@@ -328,8 +328,8 @@ func newTemplatesDeleteCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "delete <id>",
-		Short: "Delete operation",
-		Long:  "Delete a template.",
+		Short: "Delete a template",
+		Long:  "Permanently removes a template. This action cannot be undone.",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id := args[0]
@@ -355,8 +355,8 @@ func newTemplatesRenderCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "render <id>",
-		Short: "Render operation",
-		Long:  "Render a saved template with sample data.\n\nSet the request body's fields with flags, or pass the whole body as JSON with --data (inline, @file, or @- for stdin); flags override fields from --data.",
+		Short: "Render a template",
+		Long:  "Renders a saved template with sample data, to preview the output before sending.\n\nSet the request body's fields with flags, or pass the whole body as JSON with --data (inline, @file, or @- for stdin); flags override fields from --data.",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id := args[0]

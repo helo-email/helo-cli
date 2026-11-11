@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2
+
+- Improved the help for the `helo templates` commands: each now describes
+  what it does, including MJML support, and the content flags list their
+  maximum lengths.
+
 ## 0.3.1
 
 - Fixed every command panicking at startup with `render-draft flag redefined: data`. The template

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0
+
+- Commands now retry a request that fails with a network error, a timeout, or a `408`, `429`
+  or `5xx` response, up to 2 times, when sending it again can't do anything twice. The
+  `helo sending` commands generate an idempotency key for this unless you pass
+  `--idempotency-key`.
+- Each request attempt now times out after 30 seconds instead of waiting indefinitely on a
+  stalled connection.
+
 ## 0.3.2
 
 - Improved the help for the `helo templates` commands: each now describes

@@ -146,7 +146,9 @@ func newClient() (*helo.Helo, error) {
 		opts = append(opts, helo.WithBaseURL(baseURL))
 	}
 	if f.DryRun {
-		opts = append(opts, helo.WithHTTPClient(&http.Client{Transport: dryRunTransport{quiet: f.Quiet}}))
+		// The transport stops each request with ErrDryRun, which a retry would only print again.
+		opts = append(opts, helo.WithHTTPClient(&http.Client{Transport: dryRunTransport{quiet: f.Quiet}}),
+			helo.WithMaxRetries(0))
 	}
 
 	return helo.NewHelo(token, opts...), nil

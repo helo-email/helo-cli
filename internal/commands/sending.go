@@ -177,6 +177,7 @@ func newSendingSendTransactionalCmd() *cobra.Command {
 }
 
 func newSendingSendTransactionalBatchCmd() *cobra.Command {
+	var validation string
 	var requests string
 	var channelID string
 	var idempotencyKey string
@@ -187,11 +188,21 @@ func newSendingSendTransactionalBatchCmd() *cobra.Command {
 		Short: "Send transactional emails in batch",
 		Long:  "Sends multiple transactional emails in a single API request for better performance.\n\nSet the request body's fields with flags, or pass the whole body as JSON with --data (inline, @file, or @- for stdin); flags override fields from --data.",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if validation != "" {
+				switch validation {
+				case "strict", "relaxed":
+				default:
+					return usageErrorf("invalid value %q for --validation: must be one of strict|relaxed", validation)
+				}
+			}
 
 			params := &helo.SendMessageBatchRequest{}
 			dataFields, err := decodeBody(requestData, params)
 			if err != nil {
 				return err
+			}
+			if cmd.Flags().Changed("validation") {
+				params.Validation = helo.BatchValidationMode(validation)
 			}
 			if cmd.Flags().Changed("requests") {
 				var v []helo.SendMessageRequest
@@ -221,6 +232,10 @@ func newSendingSendTransactionalBatchCmd() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().StringVar(&validation, "validation", "", "How the batch handles messages that fail validation. 'strict' — any validation failure rejects the whole batch with a 422, and no messages are sent. 'relaxed' — valid messages are sent, and each invalid message is returned as 'failed'. Suppressed recipients and the send limit are not validation, so they fail only the affected message in either mode (one of: strict|relaxed)")
+	_ = cmd.RegisterFlagCompletionFunc("validation", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return []string{"strict", "relaxed"}, cobra.ShellCompDirectiveNoFileComp
+	})
 	cmd.Flags().StringVar(&requests, "requests", "", "requests (required; JSON: [{\"from\": {…}, \"to\": [{…}], \"cc\": [{…}], \"bcc\": [{…}], \"replyTo\": [{…}], \"subject\": string, \"html\": string, \"text\": string, \"template\": {…}, \"tracking\": {…}, \"attachments\": [{…}], \"tags\": [string], \"headers\": {string: string}, \"metadata\": {string: string}}]; @file or @- reads it from a file or stdin)")
 	cmd.Flags().StringVar(&requestData, "data", "", "The whole request body as JSON (inline, @file, or @- for stdin); other flags override its fields")
 	cmd.Flags().StringVar(&channelID, "channel-id", "", "Used to specify a channel ID for sending when using an account-level API credential (default $HELO_CHANNEL_ID)")

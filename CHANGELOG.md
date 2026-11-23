@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.0
+
+- Added `validation` parameter to batch sending requests, allowing control over the processing behaviour of partial failures.
+
 ## 0.4.0
 
 - Commands now retry a request that fails with a network error, a timeout, or a `408`, `429`
